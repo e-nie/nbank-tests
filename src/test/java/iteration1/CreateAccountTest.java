@@ -14,7 +14,7 @@ import java.util.UUID;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
-public class LoginUserTest {
+public class CreateAccountTest {
     @BeforeAll
     public static void setupRestAssured() {
         RestAssured.filters(
@@ -22,27 +22,9 @@ public class LoginUserTest {
                         new ResponseLoggingFilter()));
     }
 
-    @Test
-    public void adminCanGenerateAuthTokenTest() {
-        given()
-                .contentType(ContentType.JSON)
-                .accept(ContentType.JSON)
-                .body("""
-                        {
-                        "username": "admin",
-                        "password":"admin"
-                        }
-                        """)
-                .post("http://localhost:4111/api/v1/auth/login")
-                .then()
-                .assertThat()
-                .statusCode(HttpStatus.SC_OK)
-                .header("Authorization", "Basic YWRtaW46YWRtaW4=");
-
-    }
 
     @Test
-    public void userCanGenerateAuthTokenTest() {
+    public void userCanCreateAccountTest() {
         //Создание пользователя
         String username = "Evchen_" + UUID.randomUUID()
                 .toString()
@@ -68,8 +50,8 @@ public class LoginUserTest {
                 .body("role", equalTo("USER"))
                 .body("id", notNullValue());
 
-
-        given()
+        //достаем токен
+        String userAuthHeader = given()
                 .contentType(ContentType.JSON)
                 .accept(ContentType.JSON)
                 .body("""
@@ -82,9 +64,19 @@ public class LoginUserTest {
                 .then()
                 .assertThat()
                 .statusCode(HttpStatus.SC_OK)
-                .header("Authorization", notNullValue())
-                .header("Authorization", startsWith("Basic"));
+                .extract()
+                .header("Authorization");
 
+        //создаем аккаунт (счет)
+        given()
+                .header("Authorization", userAuthHeader)
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .post("http://localhost:4111/api/v1/accounts")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatus.SC_CREATED);
 
+// запросить все аккаунты и удостовериться, что наш пользователь действительно создался
     }
 }
