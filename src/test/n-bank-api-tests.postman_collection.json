@@ -13,7 +13,7 @@
           "name": "Positive",
           "item": [
             {
-              "name": "Can create user with correct data",
+              "name": "Admin can create user with correct data",
               "request": {
                 "auth": {
                   "type": "noauth"
