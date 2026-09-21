@@ -975,6 +975,78 @@
               "response": []
             },
             {
+              "name": "User can make a  deposit to their own account with amount 4999.99",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Basic RXZjaGVuOklycmV2ZXJzaWJsZSExMA==",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"id\": 1,\n  \"balance\": 4999.99\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/accounts/deposit",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "accounts",
+                    "deposit"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "User can make a  deposit to their own account with amount 0.01",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Basic RXZjaGVuOklycmV2ZXJzaWJsZSExMA==",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"id\": 1,\n  \"balance\": 0.01\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/accounts/deposit",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "accounts",
+                    "deposit"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
               "name": "User can make a transfer between own accounts with a valid amount",
               "request": {
                 "auth": {
@@ -1081,6 +1153,78 @@
                 }
               },
               "response": []
+            },
+            {
+              "name": "User can make a transfer between own accounts with amount 9999.99",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Basic RXZjaGVuOklycmV2ZXJzaWJsZSExMA==",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"senderAccountId\": 1,\n  \"receiverAccountId\":3 ,\n  \"amount\": 9999.99\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/accounts/transfer",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "accounts",
+                    "transfer"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "User can make a transfer between own accounts with minimum amount 0.01",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Basic RXZjaGVuOklycmV2ZXJzaWJsZSExMA==",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"senderAccountId\": 1,\n  \"receiverAccountId\":3 ,\n  \"amount\": 0.01\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/accounts/transfer",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "accounts",
+                    "transfer"
+                  ]
+                }
+              },
+              "response": []
             }
           ]
         },
@@ -1104,6 +1248,42 @@
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"id\": 1,\n  \"balance\": 5001\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/accounts/deposit",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "accounts",
+                    "deposit"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "User cannot  deposit with amount 5000.01 - ERROR",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Basic RXZjaGVuOklycmV2ZXJzaWJsZSExMA==",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"id\": 1,\n  \"balance\": 5000.01\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1248,6 +1428,42 @@
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"senderAccountId\": 1,\n  \"receiverAccountId\":3 ,\n  \"amount\": 10001\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/accounts/transfer",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "accounts",
+                    "transfer"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "User cannot  make a transfer between own accounts with amount 10000.01",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Basic RXZjaGVuOklycmV2ZXJzaWJsZSExMA==",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"senderAccountId\": 1,\n  \"receiverAccountId\":3 ,\n  \"amount\": 10000.01\n}",
                   "options": {
                     "raw": {
                       "language": "json"
