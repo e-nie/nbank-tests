@@ -10,8 +10,7 @@ import org.junit.jupiter.api.BeforeAll;
 import java.util.List;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.startsWith;
+import static org.hamcrest.Matchers.*;
 
 public class DepositTest {
     @BeforeAll
@@ -52,6 +51,30 @@ public class DepositTest {
                 .assertThat()
                 .statusCode(HttpStatus.SC_CREATED);
     }
+
+    public static void createAccount(String userAuthorization){
+        //создаем счет
+        given()
+                .header("Authorization", userAuthorization)
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .post("http://localhost:4111/api/v1/accounts")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatus.SC_CREATED);
+        //проверяем что счет создался
+        given()
+                .header("Authorization", userAuthorization)
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .get("http://localhost:4111/api/v1/customer/accounts")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatus.SC_CREATED)
+                .body("$", not(empty()));
+
+    }
+
 
 
 }
