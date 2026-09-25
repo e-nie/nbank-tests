@@ -21,21 +21,37 @@ public class DepositTest {
                         new ResponseLoggingFilter()));
     }
 
-public  static String loginUser(String username, String password){
-   return given()
-            .contentType(ContentType.JSON)
-            .accept(ContentType.JSON)
-            .body("""
+    public static String loginUser(String username, String password) {
+        return given()
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .body("""
                         {
                         "username": "%s",
                         "password":"%s"
                         }
                         """.formatted(username, password))
-            .post("http://localhost:4111/api/v1/auth/login")
-            .header("Authorization");
+                .post("http://localhost:4111/api/v1/auth/login")
+                .header("Authorization");
+    }
 
-}
-
+    public static void createUser(String username, String password) {
+        given()
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .header("Authorization", "Basic YWRtaW46YWRtaW4=")
+                .body("""
+                        {
+                          "username": "%s",
+                          "password": "%s",
+                          "role": "USER"
+                        }
+                        """.formatted(username, password))
+                .post("http://localhost:4111/api/v1/admin/users")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatus.SC_CREATED);
+    }
 
 
 }
