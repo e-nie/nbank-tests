@@ -6,8 +6,11 @@ import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.http.ContentType;
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.List;
+import java.util.UUID;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
@@ -18,20 +21,6 @@ public class DepositTest {
         RestAssured.filters(
                 List.of(new RequestLoggingFilter(),
                         new ResponseLoggingFilter()));
-    }
-
-    public static String loginUser(String username, String password) {
-        return given()
-                .contentType(ContentType.JSON)
-                .accept(ContentType.JSON)
-                .body("""
-                        {
-                        "username": "%s",
-                        "password":"%s"
-                        }
-                        """.formatted(username, password))
-                .post("http://localhost:4111/api/v1/auth/login")
-                .header("Authorization");
     }
 
     public static void createUser(String username, String password) {
@@ -52,7 +41,21 @@ public class DepositTest {
                 .statusCode(HttpStatus.SC_CREATED);
     }
 
-    public static void createAccount(String userAuthorization){
+    public static String loginUser(String username, String password) {
+        return given()
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .body("""
+                        {
+                        "username": "%s",
+                        "password":"%s"
+                        }
+                        """.formatted(username, password))
+                .post("http://localhost:4111/api/v1/auth/login")
+                .header("Authorization");
+    }
+
+    public static void createAccount(String userAuthorization) {
         //создаем счет
         given()
                 .header("Authorization", userAuthorization)
@@ -75,6 +78,20 @@ public class DepositTest {
 
     }
 
+    @ParameterizedTest
+    @ValueSource(doubles = {5000, 4999.99, 0.01})
+    public void depositTest(double amount) {
+// подготавливаем тестовые данные и вызываем хелперы
+        String username = "Evchen_" + UUID.randomUUID()
+                .toString()
+                .substring(0, 8);
+        String password = "Irreversible!10";
+
+        createUser(username, password);//создаем юзера
+        String userAuthorization = loginUser(username, password);//получаем токен
+        createAccount(userAuthorization);//создаем счет
+
+    }
 
 
 }
