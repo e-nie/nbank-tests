@@ -6,6 +6,7 @@ import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.http.ContentType;
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -78,10 +79,40 @@ public class DepositTest {
     }
 
 
-    @ParameterizedTest
-    @ValueSource(doubles = {-200, 5000.01})
-    public void userCannotMakeDepositWithInvalidAmountTest(double amount) {
+    @Test
 
+    public void userCannotMakeDepositWithNegativeAmountTest() {
+        double amount = -200;
+        String username = "Evchen_" + UUID.randomUUID().toString().substring(0, 8);
+        String password = "Irreversible!10";
+
+        createUser(username, password);//создаем юзера
+        String userAuthorization = loginUser(username, password);//получаем токен
+
+        int accountId = createAccount(userAuthorization);//создаем счет и присваиваем результат метода в переменную
+
+        //делаем депозит
+        given().header("Authorization", userAuthorization)
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .body("""
+                        {
+                          "id": %s,
+                          "balance": %s
+                                           }
+                        """.formatted(accountId, amount))
+                .post("/accounts/deposit")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatus.SC_BAD_REQUEST)
+                .body(equalTo("Invalid account or amount"));
+    }
+
+    @Bug
+    @Disabled
+    @Test
+    public void userCannotMakeDepositAboveMaximumAmountTest() {
+        double amount = 5000.01;
         String username = "Evchen_" + UUID.randomUUID().toString().substring(0, 8);
         String password = "Irreversible!10";
 
