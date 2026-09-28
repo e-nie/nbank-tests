@@ -105,7 +105,7 @@ public class DepositTest {
                 .then()
                 .assertThat()
                 .statusCode(HttpStatus.SC_BAD_REQUEST)
-                .body(equalTo("Invalid account or amount"));
+                .body(equalTo("Deposit amount must be at least 0.01"));
     }
 
 
