@@ -108,8 +108,7 @@ public class DepositTest {
                 .body(equalTo("Invalid account or amount"));
     }
 
-    @Bug
-    @Disabled
+
     @Test
     public void userCannotMakeDepositAboveMaximumAmountTest() {
         double amount = 5000.01;
@@ -135,7 +134,7 @@ public class DepositTest {
                 .then()
                 .assertThat()
                 .statusCode(HttpStatus.SC_BAD_REQUEST)
-                .body(equalTo("Invalid account or amount"));
+                .body(equalTo("Deposit amount cannot exceed 5000"));
     }
 
     @Test
