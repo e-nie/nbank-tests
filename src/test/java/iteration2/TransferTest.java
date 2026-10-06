@@ -94,9 +94,17 @@ public class TransferTest {
         int sourceAccountId = createAccount(userAuthorization);
         int destinationAccountId = createAccount(userAuthorization);
 
-        makeDeposit(userAuthorization, sourceAccountId, 5000);
-        makeDeposit(userAuthorization, sourceAccountId, 5000);
-        makeDeposit(userAuthorization, sourceAccountId, 100);
+        double deposit1 = 5000;
+        double deposit2 = 5000;
+        double deposit3 = 100;
+        makeDeposit(userAuthorization, sourceAccountId, deposit1);
+        makeDeposit(userAuthorization, sourceAccountId, deposit2);
+        makeDeposit(userAuthorization, sourceAccountId, deposit3);
+
+        double totalDepositAmount = deposit1 + deposit2 + deposit3;
+        double expectedSourceBalance = totalDepositAmount - amount;
+        double expectedDestinationBalance = amount;
+
 
         given()
                 .header("Authorization", userAuthorization)
@@ -117,6 +125,20 @@ public class TransferTest {
                 .body("senderAccountId", equalTo(sourceAccountId))
                 .body("receiverAccountId", equalTo(destinationAccountId))
                 .body("amount", equalTo((float) amount));
+
+        given()
+                .header("Authorization", userAuthorization)
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .get("/customer/accounts")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatus.SC_OK)
+                .body("find {it.id == " + sourceAccountId + " }.balance",
+                        equalTo((float) expectedSourceBalance))
+                .body("find{ it.id == " + destinationAccountId + " }.balance",
+                        equalTo((float) expectedDestinationBalance));
+
     }
 
     @Test
@@ -126,6 +148,7 @@ public class TransferTest {
         String password = "Irreversible!10";
 
         double amount = 1000;
+
 
         createUser(username1, password);
         createUser(username2, password);
@@ -157,6 +180,31 @@ public class TransferTest {
                 .body("senderAccountId", equalTo(senderAccountId))
                 .body("receiverAccountId", equalTo(receiverAccountId))
                 .body("amount", equalTo((float) amount));
+
+        //check sender balance
+        given()
+                .header("Authorization", userAuthorization1)
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .get("/customer/accounts")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatus.SC_OK)
+                .body("find { it.id == " + senderAccountId + " }.balance",
+                        equalTo(0.0F));
+
+        //check receiver balance
+        given()
+                .header("Authorization", userAuthorization2)
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .get("/customer/accounts")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatus.SC_OK)
+                .body("find { it.id == " + receiverAccountId + " }.balance",
+                        equalTo((float) amount));
+
     }
 
     @Test
@@ -192,6 +240,28 @@ public class TransferTest {
                 .assertThat()
                 .statusCode(HttpStatus.SC_BAD_REQUEST)
                 .body(equalTo("Transfer amount cannot exceed 10000"));
+
+        given()
+                .header("Authorization", userAuthorization)
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .get("/customer/accounts")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatus.SC_OK)
+                .body("find { it.id == " + sourceAccountId + " }.balance",
+                        equalTo(10100.0F));
+
+        given()
+                .header("Authorization", userAuthorization)
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .get("/customer/accounts")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatus.SC_OK)
+                .body("find { it.id == " + destinationAccountId + " }.balance",
+                        equalTo(0.0F));
     }
 
     @Test
@@ -225,6 +295,28 @@ public class TransferTest {
                 .assertThat()
                 .statusCode(HttpStatus.SC_BAD_REQUEST)
                 .body(equalTo("Transfer amount must be at least 0.01"));
+
+        given()
+                .header("Authorization", userAuthorization)
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .get("/customer/accounts")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatus.SC_OK)
+                .body("find { it.id == " + sourceAccountId + " }.balance",
+                        equalTo(100.0F));
+
+        given()
+                .header("Authorization", userAuthorization)
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .get("/customer/accounts")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatus.SC_OK)
+                .body("find { it.id == " + destinationAccountId + " }.balance",
+                        equalTo(0.0F));
     }
 
 
@@ -258,6 +350,28 @@ public class TransferTest {
                 .assertThat()
                 .statusCode(HttpStatus.SC_BAD_REQUEST)
                 .body(equalTo("Invalid transfer: insufficient funds or invalid accounts"));
+
+        given()
+                .header("Authorization", userAuthorization)
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .get("/customer/accounts")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatus.SC_OK)
+                .body("find { it.id == " + sourceAccountId + " }.balance",
+                        equalTo(100.0F));
+
+        given()
+                .header("Authorization", userAuthorization)
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .get("/customer/accounts")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatus.SC_OK)
+                .body("find { it.id == " + destinationAccountId + " }.balance",
+                        equalTo(0.0F));
     }
 }
 

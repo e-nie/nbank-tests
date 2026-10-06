@@ -4,6 +4,7 @@ import io.restassured.RestAssured;
 import io.restassured.filter.log.RequestLoggingFilter;
 import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.http.ContentType;
+import org.apache.http.HttpClientConnection;
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
@@ -76,6 +77,18 @@ public class DepositTest {
                 .then()
                 .assertThat()
                 .statusCode(HttpStatus.SC_OK);
+
+        given()
+                .header("Authorization", userAuthorization)
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .get("/customer/accounts")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatus.SC_OK)
+                .body("[0].balance", equalTo((float) amount));
+
+
     }
 
 
@@ -106,6 +119,18 @@ public class DepositTest {
                 .assertThat()
                 .statusCode(HttpStatus.SC_BAD_REQUEST)
                 .body(equalTo("Deposit amount must be at least 0.01"));
+
+        given()
+                .header("Authorization", userAuthorization)
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .get("/customer/accounts")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatus.SC_OK)
+                .body("[0].balance", equalTo((float) 0.0F));
+
+
     }
 
 
@@ -135,6 +160,16 @@ public class DepositTest {
                 .assertThat()
                 .statusCode(HttpStatus.SC_BAD_REQUEST)
                 .body(equalTo("Deposit amount cannot exceed 5000"));
+
+        given()
+                .header("Authorization", userAuthorization)
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .get("/customer/accounts")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatus.SC_OK)
+                .body("[0].balance", equalTo((float) 0.0F));
     }
 
     @Test
@@ -152,6 +187,7 @@ public class DepositTest {
         //int accountId1 = createAccount(authorization1);  - we don't need our account number
         int accountId2 = createAccount(authorization2);
 
+        //логинимся и пытаемся внести деньги еа второй счет
         given().header("Authorization", authorization1).contentType(ContentType.JSON).accept(ContentType.JSON).body("""
                         {
                           "id": %s,
@@ -163,6 +199,18 @@ public class DepositTest {
                 .assertThat()
                 .statusCode(HttpStatus.SC_FORBIDDEN)
                 .body(equalTo("Unauthorized access to account"));
+
+        //логинимся как второй и проверяем, не перевелось ли там чего вдруг
+        given()
+                .header("Authorization", authorization2)
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .get("/customer/accounts")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatus.SC_OK)
+                .body("[0].balance", equalTo((float) 0.0F));
+
     }
 
     @Test
@@ -191,8 +239,15 @@ public class DepositTest {
                 .statusCode(HttpStatus.SC_FORBIDDEN)
                 .body(equalTo("Unauthorized access to account"));
 
+        given()
+                .header("Authorization", userAuthorization)
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .get("/customer/accounts")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatus.SC_OK)
+                .body("$", empty());
 
     }
-
-
 }

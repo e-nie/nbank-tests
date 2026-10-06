@@ -84,6 +84,15 @@ public class ProfileTest {
                 .statusCode(HttpStatus.SC_OK)
                 .body("message", equalTo("Profile updated successfully"))
                 .body("customer.name", equalTo(newUserName));
+
+        given()
+                .header("Authorization", userAuthorization)
+                .accept(ContentType.JSON)
+                .get("/customer/profile")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatus.SC_OK)
+                .body("name", equalTo(newUserName));
     }
 
 
@@ -121,5 +130,14 @@ public class ProfileTest {
                 .assertThat()
                 .statusCode(HttpStatus.SC_BAD_REQUEST)
                 .body(equalTo("Name must contain two words with letters only"));
+
+        given()
+                .header("Authorization", userAuthorization)
+                .accept(ContentType.JSON)
+                .get("/customer/profile")
+                .then()
+                .assertThat()
+                .statusCode(HttpStatus.SC_OK)
+                .body("name", nullValue());
     }
 }
