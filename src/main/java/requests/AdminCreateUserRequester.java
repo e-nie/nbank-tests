@@ -7,17 +7,17 @@ import models.CreateUserRequest;
 
 import static io.restassured.RestAssured.given;
 
-public class AdminCreateUserRequester extends Request<CreateUserRequest> {
+public class AdminCreateUserRequester extends Request{
     public AdminCreateUserRequester(RequestSpecification requestSpecification, ResponseSpecification responseSpecification) {
         super(requestSpecification, responseSpecification);
     }
 
-    @Override
-    public ValidatableResponse post(CreateUserRequest model) {
+
+    public ValidatableResponse createUser(CreateUserRequest model) {
         return given()
                 .spec(requestSpecification)
                 .body(model)
-                .post("/api/v1/admin/users")
+                .post("/admin/users")
                 .then()
                 .assertThat()
                 .spec(responseSpecification);

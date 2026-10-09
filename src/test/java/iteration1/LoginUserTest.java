@@ -23,7 +23,7 @@ public class LoginUserTest extends BaseTest{
 
         new LoginUserRequester(RequestSpecs.unauthSpec(),
                 ResponseSpecs.requestReturnsOK())
-                .post(userRequest);
+                .loginUser(userRequest);
     }
 
     @Test
@@ -38,12 +38,12 @@ public class LoginUserTest extends BaseTest{
         new AdminCreateUserRequester(
                 RequestSpecs.adminSpec(),
                 ResponseSpecs.entityWasCreated())
-                .post(userRequest);
+                .createUser(userRequest);
 
 
         new LoginUserRequester(RequestSpecs.unauthSpec(),
                 ResponseSpecs.requestReturnsOK())
-                .post(LoginUserRequest.builder()
+                .loginUser(LoginUserRequest.builder()
                         .username(userRequest.getUsername())
                         .password(userRequest.getPassword())
                         .build())

@@ -26,7 +26,7 @@ public class CreateUserTest extends BaseTest {
 
         CreateUserResponse createUserResponse = new AdminCreateUserRequester(RequestSpecs.adminSpec(),
                 ResponseSpecs.entityWasCreated())
-                .post(createUserRequest).extract().as(CreateUserResponse.class);
+                .createUser(createUserRequest).extract().as(CreateUserResponse.class);
 
         softly.assertThat(createUserRequest.getUsername()).isEqualTo(createUserResponse.getUsername());
         softly.assertThat(createUserRequest.getPassword()).isNotEqualTo(createUserResponse.getPassword());
@@ -57,7 +57,7 @@ public class CreateUserTest extends BaseTest {
 
          new AdminCreateUserRequester(RequestSpecs.adminSpec(),
                 ResponseSpecs.requestReturnsBadRequest(errorKey, errorValue))
-                .post(createUserRequest);
+                 .createUser(createUserRequest);
 
 
     }

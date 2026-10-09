@@ -15,11 +15,11 @@ public class CreateAccountRequester extends Request {
         super(requestSpecification, responseSpecification);
     }
 
-    @Override
-    public ValidatableResponse post(BaseModel model) {
+
+    public ValidatableResponse createAccount() {
         return given()
                 .spec(requestSpecification)
-                .post("/api/v1/accounts")
+                .post("/accounts")
                 .then()
                 .assertThat()
                 .spec(responseSpecification);
