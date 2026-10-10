@@ -1,143 +1,101 @@
 package iteration2;
 
-import io.restassured.RestAssured;
-import io.restassured.filter.log.RequestLoggingFilter;
-import io.restassured.filter.log.ResponseLoggingFilter;
-import io.restassured.http.ContentType;
-import org.apache.http.HttpStatus;
-import org.junit.jupiter.api.BeforeAll;
+import generators.RandomData;
+import io.restassured.specification.RequestSpecification;
+import models.ChangeProfileRequest;
+import models.CreateUserRequest;
+import models.UserRole;
 import org.junit.jupiter.api.Test;
+import requests.AdminCreateUserRequester;
+import requests.ChangeProfileRequester;
+import requests.GetProfileRequester;
+import specs.RequestSpecs;
+import specs.ResponseSpecs;
 
-import java.util.List;
 import java.util.UUID;
 
-import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.nullValue;
 
 public class ProfileTest {
-    @BeforeAll
-    public static void setupRestAssured() {
-        RestAssured.baseURI = "http://localhost:4111";
-        RestAssured.basePath = "/api/v1";
-
-        RestAssured.filters(List.of(new RequestLoggingFilter(), new ResponseLoggingFilter()));
-    }
-
-    public static void createUser(String username, String password) {
-        given().contentType(ContentType.JSON)
-                .accept(ContentType.JSON)
-                .header("Authorization", "Basic YWRtaW46YWRtaW4=")
-                .body("""
-                        {
-                          "username": "%s",
-                          "password": "%s",
-                          "role": "USER"
-                        }
-                        """.formatted(username, password))
-                .post("/admin/users")
-                .then().assertThat()
-                .statusCode(HttpStatus.SC_CREATED);
-    }
-
-    //return auth token
-    public static String loginUser(String username, String password) {
-        return given().contentType(ContentType.JSON).accept(ContentType.JSON).body("""
-                {
-                "username": "%s",
-                "password":"%s"
-                }
-                """.formatted(username, password)).post("/auth/login").header("Authorization");
-    }
 
     @Test
-    public void userCanUpdateProfilenameTest() {
-        String username = "Evchen_" + UUID.randomUUID().toString().substring(0, 8);
-        String password = "Irreversible!10";
+    public void userCanUpdateProfileNameTest() {
 
-        createUser(username, password);
-        String userAuthorization = loginUser(username, password);
+        CreateUserRequest userRequest = CreateUserRequest.builder()
+                .username(RandomData.getUsername())
+                .password(RandomData.getPassword())
+                .role(UserRole.USER.toString())
+                .build();
 
-        given()
-                .header("Authorization", userAuthorization)
-                .accept(ContentType.JSON)
-                .get("/customer/profile")
-                .then()
-                .assertThat()
-                .statusCode(HttpStatus.SC_OK)
-                .body("name", nullValue());
+        new AdminCreateUserRequester(
+                RequestSpecs.adminSpec(),
+                ResponseSpecs.entityWasCreated())//
+                .createUser(userRequest);
+
+
+        RequestSpecification userSpec = RequestSpecs.authAsUser(
+                userRequest.getUsername(),
+                userRequest.getPassword()
+        );
+
+        new GetProfileRequester(userSpec, ResponseSpecs.requestReturnsOK())
+                .getProfile()
+                .body("name", nullValue());//check the initial field state
 
         String newUserName = "Mdova Korneeva";
 
-        given()
-                .header("Authorization", userAuthorization)
-                .contentType(ContentType.JSON)
-                .accept(ContentType.JSON)
-                .body("""
-                                {
-                                 "name": "%s"
-                                }
-                        """.formatted(newUserName))
-                .put("/customer/profile")
-                .then()
-                .assertThat()
-                .statusCode(HttpStatus.SC_OK)
-                .body("message", equalTo("Profile updated successfully"))
-                .body("customer.name", equalTo(newUserName));
+        ChangeProfileRequest changeProfileRequest = ChangeProfileRequest.builder()
+                .name(newUserName)
+                .build();
 
-        given()
-                .header("Authorization", userAuthorization)
-                .accept(ContentType.JSON)
-                .get("/customer/profile")
-                .then()
-                .assertThat()
-                .statusCode(HttpStatus.SC_OK)
+        new ChangeProfileRequester(userSpec, ResponseSpecs.requestReturnsOK())
+                .changeProfile(changeProfileRequest);
+
+        new GetProfileRequester(userSpec, ResponseSpecs.requestReturnsOK())
+                .getProfile()
                 .body("name", equalTo(newUserName));
     }
 
 
     @Test
     public void userCannotUpdateProfileWithInvalidNameTest() {
-        String username = "Evchen_" + UUID.randomUUID().toString().substring(0, 8);
-        String password = "Irreversible!10";
+        CreateUserRequest userRequest = CreateUserRequest.builder()
+                .username(RandomData.getUsername())
+                .password(RandomData.getPassword())
+                .role(UserRole.USER.toString())
+                .build();
 
-        createUser(username, password);
-        String userAuthorization = loginUser(username, password);
-
-        given()
-                .header("Authorization", userAuthorization)
-                .accept(ContentType.JSON)
-                .get("/customer/profile")
-                .then()
-                .assertThat()
-                .statusCode(HttpStatus.SC_OK)
-                .body("name", nullValue());
+        new AdminCreateUserRequester(
+                RequestSpecs.adminSpec(),
+                ResponseSpecs.entityWasCreated())
+                .createUser(userRequest);
 
 
-        String newUserName = "Evchen_" + UUID.randomUUID().toString().substring(0, 8);//invalid format for profile name
+        RequestSpecification userSpec = RequestSpecs.authAsUser(
+                userRequest.getUsername(),
+                userRequest.getPassword()
+        );
 
-        given()
-                .header("Authorization", userAuthorization)
-                .contentType(ContentType.JSON)
-                .accept(ContentType.JSON)
-                .body("""
-                                {
-                                 "name": "%s"
-                                }
-                        """.formatted(newUserName))
-                .put("/customer/profile")
-                .then()
-                .assertThat()
-                .statusCode(HttpStatus.SC_BAD_REQUEST)
-                .body(equalTo("Name must contain two words with letters only"));
+        new GetProfileRequester(userSpec, ResponseSpecs.requestReturnsOK())
+                .getProfile()
+                .body("name", nullValue());//check the initial field state
 
-        given()
-                .header("Authorization", userAuthorization)
-                .accept(ContentType.JSON)
-                .get("/customer/profile")
-                .then()
-                .assertThat()
-                .statusCode(HttpStatus.SC_OK)
+
+        String invalidName = "Evchen_" + UUID.randomUUID().toString().substring(0, 8);//invalid format for profile name
+
+        //create model
+        ChangeProfileRequest changeProfileRequest = ChangeProfileRequest.builder()
+                .name(invalidName)
+                .build();
+
+
+        new ChangeProfileRequester(userSpec, ResponseSpecs.requestReturnsBadRequestWithText("Name must contain two words with letters only"))
+                .changeProfile(changeProfileRequest);
+
+
+        new GetProfileRequester(userSpec, ResponseSpecs.requestReturnsOK())
+                .getProfile()
                 .body("name", nullValue());
     }
 }
