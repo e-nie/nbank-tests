@@ -20,7 +20,8 @@ public class RequestSpecs {
                 .setAccept(ContentType.JSON)
                 .addFilters(List.of(new RequestLoggingFilter(),
                         new ResponseLoggingFilter()))
-                .setBaseUri("http://localhost:4111");
+                .setBaseUri("http://localhost:4111")
+                .setBasePath("/api/v1");
     }
 
     public static RequestSpecification unauthSpec() {
@@ -38,14 +39,14 @@ public class RequestSpecs {
         String userAuthHeader = new LoginUserRequester(
                 RequestSpecs.unauthSpec(),
                 ResponseSpecs.requestReturnsOK())
-                .post(LoginUserRequest.builder()
+                .loginUser(LoginUserRequest.builder()
                         .username(username)
                         .password(password)
                         .build())
                 .extract()
                 .header("Authorization");
 
-        return  defaultRequestBuilder()
+        return defaultRequestBuilder()
                 .addHeader("Authorization", userAuthHeader)
                 .build();
 

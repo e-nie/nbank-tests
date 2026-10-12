@@ -7,19 +7,19 @@ import models.LoginUserRequest;
 
 import static io.restassured.RestAssured.given;
 
-public class LoginUserRequester extends Request<LoginUserRequest> {
+public class LoginUserRequester extends Request{
 
     public LoginUserRequester(RequestSpecification requestSpecification, ResponseSpecification responseSpecification) {
         super(requestSpecification, responseSpecification);
     }
 
-    @Override
-    public ValidatableResponse post(LoginUserRequest model) {
+
+    public ValidatableResponse loginUser(LoginUserRequest model) {
         return given()
                 .spec(requestSpecification)
                 //Параметр 2: Тело запроса
                 .body(model)
-                .post("/api/v1/auth/login")
+                .post("/auth/login")
                 .then()
                 .assertThat()
                 .spec(responseSpecification);

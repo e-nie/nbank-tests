@@ -26,13 +26,14 @@ public class CreateAccountTest {
         new AdminCreateUserRequester(
                 RequestSpecs.adminSpec(),
                 ResponseSpecs.entityWasCreated())
-                .post(userRequest);
+                .createUser(userRequest);
 
         new CreateAccountRequester(RequestSpecs.authAsUser(userRequest.getUsername(), userRequest.getPassword()),
                 ResponseSpecs.entityWasCreated())
-                .post(null);
+                .createAccount();
 
 
 // запросить все аккаунты и удостовериться, что наш пользователь действительно создался
     }
+
 }
