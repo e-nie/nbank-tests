@@ -6,7 +6,8 @@ import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
 import models.LoginUserRequest;
-import requests.LoginUserRequester;
+import requests.skeleton.Endpoint;
+import requests.skeleton.requesters.CrudRequester;
 
 import java.util.List;
 
@@ -20,7 +21,7 @@ public class RequestSpecs {
                 .setAccept(ContentType.JSON)
                 .addFilters(List.of(new RequestLoggingFilter(),
                         new ResponseLoggingFilter()))
-                .setBaseUri("http://localhost:4111");
+                .setBaseUri("http://localhost:4111/api/v1");
     }
 
     public static RequestSpecification unauthSpec() {
@@ -35,8 +36,9 @@ public class RequestSpecs {
 
     public static RequestSpecification authAsUser(String username, String password) {
         //достаем токен
-        String userAuthHeader = new LoginUserRequester(
+        String userAuthHeader = new CrudRequester(
                 RequestSpecs.unauthSpec(),
+                Endpoint.LOGIN,
                 ResponseSpecs.requestReturnsOK())
                 .post(LoginUserRequest.builder()
                         .username(username)
