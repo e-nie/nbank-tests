@@ -61,6 +61,13 @@
             <version>3.27.7</version>
             <scope>test</scope>
         </dependency>
+        <!-- Source: https://mvnrepository.com/artifact/com.github.curious-odd-man/rgxgen -->
+        <dependency>
+            <groupId>com.github.curious-odd-man</groupId>
+            <artifactId>rgxgen</artifactId>
+            <version>3.1</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
 </project>

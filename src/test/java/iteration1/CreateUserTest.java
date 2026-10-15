@@ -1,6 +1,7 @@
 package iteration1;
 
 import generators.RandomData;
+import generators.RandomModelGenerator;
 import models.CreateUserRequest;
 import models.CreateUserResponse;
 import models.UserRole;
@@ -13,6 +14,7 @@ import requests.skeleton.requesters.CrudRequester;
 import requests.skeleton.requesters.ValidatedCrudRequester;
 import specs.RequestSpecs;
 import specs.ResponseSpecs;
+
 import java.util.stream.Stream;
 
 public class CreateUserTest extends BaseTest {
@@ -20,16 +22,12 @@ public class CreateUserTest extends BaseTest {
     @Test
     public void adminCanCreateUserWithValidData() {
         //Создание пользователя
-        CreateUserRequest createUserRequest = CreateUserRequest.builder()
-                .username(RandomData.getUsername())
-                .password(RandomData.getPassword())
-                .role(UserRole.USER.toString())
-                .build();
+        CreateUserRequest createUserRequest = RandomModelGenerator.generate(CreateUserRequest.class);
 
         CreateUserResponse createUserResponse = new ValidatedCrudRequester<CreateUserResponse>
                 (RequestSpecs.adminSpec(),
-                Endpoint.ADMIN_USER,
-                ResponseSpecs.entityWasCreated())
+                        Endpoint.ADMIN_USER,
+                        ResponseSpecs.entityWasCreated())
                 .post(createUserRequest);
 
         softly.assertThat(createUserRequest.getUsername()).isEqualTo(createUserResponse.getUsername());
@@ -59,7 +57,7 @@ public class CreateUserTest extends BaseTest {
                 .role(role)
                 .build();
 
-         new CrudRequester(RequestSpecs.adminSpec(),
+        new CrudRequester(RequestSpecs.adminSpec(),
                 Endpoint.ADMIN_USER,
                 ResponseSpecs.requestReturnsBadRequest(errorKey, errorValue))
                 .post(createUserRequest);

@@ -1,6 +1,7 @@
 package iteration1;
 
 import generators.RandomData;
+import generators.RandomModelGenerator;
 import models.*;
 import org.junit.jupiter.api.Test;
 import requests.skeleton.Endpoint;
@@ -28,11 +29,8 @@ public class LoginUserTest extends BaseTest{
     @Test
     public void userCanGenerateAuthTokenTest() {
         //Создание пользователя
-        CreateUserRequest userRequest = CreateUserRequest.builder()
-                .username(RandomData.getUsername())
-                .password(RandomData.getPassword())
-                .role(UserRole.USER.toString())
-                .build();
+        CreateUserRequest userRequest = RandomModelGenerator.generate(CreateUserRequest.class);
+
 
         new ValidatedCrudRequester<CreateUserResponse>(
                 RequestSpecs.adminSpec(),
