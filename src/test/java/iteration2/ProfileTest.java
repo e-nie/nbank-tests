@@ -1,9 +1,13 @@
 package iteration2;
 
+import enums.AlertMessage;
 import generators.RandomData;
+import generators.TestDataGenerator;
+import io.restassured.response.ValidatableResponse;
 import io.restassured.specification.RequestSpecification;
 import models.ChangeProfileRequest;
 import models.CreateUserRequest;
+import models.GetProfileResponse;
 import models.UserRole;
 import org.junit.jupiter.api.Test;
 import requests.AdminCreateUserRequester;
@@ -16,6 +20,8 @@ import java.util.UUID;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class ProfileTest {
 
@@ -39,24 +45,29 @@ public class ProfileTest {
                 userRequest.getPassword()
         );
 
-        new GetProfileRequester(userSpec, ResponseSpecs.requestReturnsOK())
+        GetProfileResponse profile = new GetProfileRequester(userSpec, ResponseSpecs.requestReturnsOK())
                 .getProfile()
-                .body("name", nullValue());//check the initial field state
+                .extract()
+                .as(GetProfileResponse.class);// profile object
 
-        String newUserName = "Mdova Korneeva";
+        assertNull(profile.getName());
 
+
+        String newUserName = TestDataGenerator.generateProfileName();
         ChangeProfileRequest changeProfileRequest = ChangeProfileRequest.builder()
                 .name(newUserName)
                 .build();
 
-        new ChangeProfileRequester(userSpec, ResponseSpecs.requestReturnsOK())
+        ValidatableResponse responseAfterUpdate = new ChangeProfileRequester(userSpec, ResponseSpecs.requestReturnsOK())
                 .changeProfile(changeProfileRequest);
 
-        new GetProfileRequester(userSpec, ResponseSpecs.requestReturnsOK())
+        GetProfileResponse updatedProfile = new GetProfileRequester(userSpec, ResponseSpecs.requestReturnsOK())
                 .getProfile()
-                .body("name", equalTo(newUserName));
-    }
+                .extract()
+                .as(GetProfileResponse.class);
 
+        assertEquals(newUserName, updatedProfile.getName());
+    }
 
     @Test
     public void userCannotUpdateProfileWithInvalidNameTest() {
@@ -77,12 +88,14 @@ public class ProfileTest {
                 userRequest.getPassword()
         );
 
-        new GetProfileRequester(userSpec, ResponseSpecs.requestReturnsOK())
+        GetProfileResponse profileBeforeUpdate = new GetProfileRequester(userSpec, ResponseSpecs.requestReturnsOK())
                 .getProfile()
-                .body("name", nullValue());//check the initial field state
+                .extract()
+                .as(GetProfileResponse.class);
 
+        assertNull(profileBeforeUpdate.getName());//check the initial field state
 
-        String invalidName = "Evchen_" + UUID.randomUUID().toString().substring(0, 8);//invalid format for profile name
+        String invalidName = TestDataGenerator.generateInvalidProfileName();//invalid format for profile name
 
         //create model
         ChangeProfileRequest changeProfileRequest = ChangeProfileRequest.builder()
@@ -90,12 +103,15 @@ public class ProfileTest {
                 .build();
 
 
-        new ChangeProfileRequester(userSpec, ResponseSpecs.requestReturnsBadRequestWithText("Name must contain two words with letters only"))
+        new ChangeProfileRequester(userSpec, ResponseSpecs.requestReturnsBadRequestWithText(AlertMessage.INVALID_PROFILE_NAME.getMessage()))
                 .changeProfile(changeProfileRequest);
 
 
-        new GetProfileRequester(userSpec, ResponseSpecs.requestReturnsOK())
+        GetProfileResponse profileAfterUpdate = new GetProfileRequester(userSpec, ResponseSpecs.requestReturnsOK())
                 .getProfile()
-                .body("name", nullValue());
+                .extract()
+                .as(GetProfileResponse.class);
+
+        assertNull(profileAfterUpdate.getName());
     }
 }

@@ -4,17 +4,17 @@ public enum AlertMessage {
     DEPOSIT_AMOUNT_TOO_LOW("Deposit amount must be at least 0.01"),
     DEPOSIT_AMOUNT_TOO_HIGH("Deposit amount cannot exceed 5000"),
     UNAUTHORIZED_ACCESS("Unauthorized access to account"),
-    INVALID_ACCOUNT_OR_AMOUNT("Invalid account or amount");
+    INVALID_ACCOUNT_OR_AMOUNT("Invalid account or amount"),
+    INVALID_PROFILE_NAME("Name must contain two words with letters only");
 
 
     private final String message;
 
-    AlertMessage(String message){
+    AlertMessage(String message) {
         this.message = message;
     }
 
-    public String getMessage(){
+    public String getMessage() {
         return message;
     }
-
 }
