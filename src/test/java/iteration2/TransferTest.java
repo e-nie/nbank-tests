@@ -1,15 +1,14 @@
 package iteration2;
 
+import enums.AlertMessage;
 import generators.RandomData;
+import generators.TestDataGenerator;
 import io.restassured.RestAssured;
 import io.restassured.filter.log.RequestLoggingFilter;
 import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
-import models.CreateUserRequest;
-import models.DepositRequest;
-import models.TransferRequest;
-import models.UserRole;
+import models.*;
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -19,11 +18,13 @@ import requests.*;
 import specs.RequestSpecs;
 import specs.ResponseSpecs;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TransferTest {
 
@@ -50,25 +51,32 @@ public class TransferTest {
         new CreateAccountRequester(userSpec, ResponseSpecs.entityWasCreated())
                 .createAccount();
 
-        int sourceAccountId = new GetAccountsRequester(
+        AccountResponse[] sourceAccount = new GetAccountsRequester(
                 userSpec, ResponseSpecs.requestReturnsOK())
                 .getAccounts()
                 .extract()
-                .path("[0].id");
+                .as(AccountResponse[].class);
+
+        int sourceAccountId = sourceAccount[0].getId();
 
         //create destination account
         new CreateAccountRequester(userSpec, ResponseSpecs.entityWasCreated())
                 .createAccount();
 
-        int destinationAccountId = new GetAccountsRequester(
+        AccountResponse[] destinationAccount = new GetAccountsRequester(
                 userSpec, ResponseSpecs.requestReturnsOK())
                 .getAccounts()
                 .extract()
-                .path("find {it.id != " + sourceAccountId + "}.id");
+                .as(AccountResponse[].class);
 
-        double deposit1 = 5000;
-        double deposit2 = 5000;
-        double deposit3 = 100;
+        int destinationAccountId = Arrays.stream(destinationAccount)
+                .filter(account -> account.getId() != sourceAccountId)
+                .findFirst()
+                .orElseThrow().getId();
+
+        double deposit1 = TestDataGenerator.generateDepositForTransfer();
+        double deposit2 = TestDataGenerator.generateDepositForTransfer();
+        double deposit3 = TestDataGenerator.generateDepositForTransfer();
 
         for (double depositAmount : new double[]{deposit1, deposit2, deposit3}) {
             DepositRequest depositRequest = DepositRequest.builder()
@@ -93,19 +101,34 @@ public class TransferTest {
                 .build();
 
 
-        new TransferRequester(userSpec, ResponseSpecs.requestReturnsOK())
+        TransferResponse transferResponse = new TransferRequester(userSpec, ResponseSpecs.requestReturnsOK())
                 .makeTransfer(transferRequest)
-                .body("message", equalTo("Transfer successful"))
-                .body("senderAccountId", equalTo(sourceAccountId))
-                .body("receiverAccountId", equalTo(destinationAccountId))
-                .body("amount", equalTo((float) amount));
+                .extract()
+                .as(TransferResponse.class);
 
-        new GetAccountsRequester(userSpec, ResponseSpecs.requestReturnsOK())
+        assertEquals(AlertMessage.TRANSFER_SUCCESSFUL.getMessage(), transferResponse.getMessage());
+        assertEquals(sourceAccountId, transferResponse.getSenderAccountId());
+        assertEquals(destinationAccountId, transferResponse.getReceiverAccountId());
+        assertEquals(amount, transferResponse.getAmount());
+
+        AccountResponse[] accountsAfterTransfer = new GetAccountsRequester(userSpec, ResponseSpecs.requestReturnsOK())
                 .getAccounts()
-                .body("find {it.id == " + sourceAccountId + " }.balance",
-                        equalTo((float) expectedSourceBalance))
-                .body("find{ it.id == " + destinationAccountId + " }.balance",
-                        equalTo((float) expectedDestinationBalance));
+                .extract()
+                .as(AccountResponse[].class);
+
+        AccountResponse sourceAccountAfterTransfer = Arrays.stream(accountsAfterTransfer)
+                .filter(account -> account.getId() == sourceAccountId)
+                .findFirst()
+                .orElseThrow();
+
+
+        AccountResponse destinationAccountAfterTransfer = Arrays.stream(accountsAfterTransfer)
+                .filter(account -> account.getId() == destinationAccountId)
+                .findFirst()
+                .orElseThrow();
+
+        assertEquals(expectedSourceBalance, sourceAccountAfterTransfer.getBalance());
+        assertEquals(expectedDestinationBalance, destinationAccountAfterTransfer.getBalance());
     }
 
     @Test
@@ -130,13 +153,15 @@ public class TransferTest {
         new CreateAccountRequester(userASpec, ResponseSpecs.entityWasCreated())
                 .createAccount();
 
-        int sourceAccountId = new GetAccountsRequester(
+        AccountResponse[] sourceAccount = new GetAccountsRequester(
                 userASpec, ResponseSpecs.requestReturnsOK())
                 .getAccounts()
                 .extract()
-                .path("[0].id");
+                .as(AccountResponse[].class);
 
-        double depositAmount = 5000;
+        int sourceAccountId = sourceAccount[0].getId();
+
+        double depositAmount = TestDataGenerator.generateDepositAmount();
 
         DepositRequest depositRequest = DepositRequest.builder()
                 .id(sourceAccountId)
@@ -168,13 +193,15 @@ public class TransferTest {
         new CreateAccountRequester(userBSpec, ResponseSpecs.entityWasCreated())
                 .createAccount();
 
-        int destinationAccountId = new GetAccountsRequester(
+        AccountResponse[] destinationAccount = new GetAccountsRequester(
                 userBSpec, ResponseSpecs.requestReturnsOK())
                 .getAccounts()
                 .extract()
-                .path("[0].id");
+                .as(AccountResponse[].class);
 
-        double transferAmount = 1000;
+        int destinationAccountId = destinationAccount[0].getId();
+
+        double transferAmount = depositAmount;//we transfer all deposited money
 
         TransferRequest transferRequest = TransferRequest.builder()
                 .senderAccountId(sourceAccountId)
@@ -182,32 +209,41 @@ public class TransferTest {
                 .amount(transferAmount)
                 .build();
 
-        new TransferRequester(userASpec, ResponseSpecs.requestReturnsOK())
+        TransferResponse transferResponse = new TransferRequester(userASpec, ResponseSpecs.requestReturnsOK())
                 .makeTransfer(transferRequest)
-                .body("message", equalTo("Transfer successful"))
-                .body("senderAccountId", equalTo(sourceAccountId))
-                .body("receiverAccountId", equalTo(destinationAccountId))
-                .body("amount", equalTo((float) transferAmount));
+                .extract()
+                .as(TransferResponse.class);
+
+        assertEquals(AlertMessage.TRANSFER_SUCCESSFUL.getMessage(), transferResponse.getMessage());
+        assertEquals(sourceAccountId, transferResponse.getSenderAccountId());
+        assertEquals(destinationAccountId, transferResponse.getReceiverAccountId());
+        assertEquals(transferAmount, transferResponse.getAmount());
 
         //check user A balance
         double expectedUserABalance = depositAmount - transferAmount;
 
-        new GetAccountsRequester(userASpec, ResponseSpecs.requestReturnsOK())
+        AccountResponse[] sourceAccountsAfterTransfer = new GetAccountsRequester(userASpec, ResponseSpecs.requestReturnsOK())
                 .getAccounts()
-                .body("find {it.id == " + sourceAccountId + " }.balance",
-                        equalTo((float) expectedUserABalance));
+                .extract()
+                .as(AccountResponse[].class);
+
+        AccountResponse sourceAccountAfterTransfer = sourceAccountsAfterTransfer[0];
+        assertEquals(expectedUserABalance, sourceAccountAfterTransfer.getBalance());
 
         //Check user B balance
         double expectedUserBBalance = transferAmount;
-        new GetAccountsRequester(userBSpec, ResponseSpecs.requestReturnsOK())
+        AccountResponse[] destinationAccountsAfterTransfer = new GetAccountsRequester(userBSpec, ResponseSpecs.requestReturnsOK())
                 .getAccounts()
-                .body("find {it.id == " + destinationAccountId + " }.balance",
-                        equalTo((float) expectedUserBBalance));
+                .extract()
+                .as(AccountResponse[].class);
+
+        AccountResponse destinationAccountAfterTransfer = destinationAccountsAfterTransfer[0];
+        assertEquals(expectedUserBBalance, destinationAccountAfterTransfer.getBalance());
     }
 
-    @Test
-    public void userCannotTransferAboveMaximumAmountTest() {
-
+    @ParameterizedTest
+    @ValueSource(doubles = {10000.01})
+    public void userCannotTransferAboveMaximumAmountTest(double transferAmount) {
         CreateUserRequest userRequest = CreateUserRequest.builder()
                 .username(RandomData.getUsername())
                 .password(RandomData.getPassword())
@@ -227,27 +263,36 @@ public class TransferTest {
         new CreateAccountRequester(userSpec, ResponseSpecs.entityWasCreated())
                 .createAccount();
 
-        int sourceAccountId = new GetAccountsRequester(
+        AccountResponse[] sourceAccounts = new GetAccountsRequester(
                 userSpec, ResponseSpecs.requestReturnsOK())
                 .getAccounts()
                 .extract()
-                .path("[0].id");
+                .as(AccountResponse[].class);
+
+        int sourceAccountId = sourceAccounts[0].getId();
+
 
         //create destination account
         new CreateAccountRequester(userSpec, ResponseSpecs.entityWasCreated())
                 .createAccount();
 
-        int destinationAccountId = new GetAccountsRequester(
+        AccountResponse[] destinationAccounts = new GetAccountsRequester(
                 userSpec, ResponseSpecs.requestReturnsOK())
                 .getAccounts()
                 .extract()
-                .path("find {it.id != " + sourceAccountId + "}.id");
+                .as(AccountResponse[].class);
 
-        double deposit1 = 5000;
-        double deposit2 = 5000;
-        double deposit3 = 20;
-        double transferAmount = 10000.01;
+        int destinationAccountId = Arrays.stream(destinationAccounts)
+                .filter(account -> account.getId() != sourceAccountId)
+                .findFirst()
+                .orElseThrow()
+                .getId();
 
+        double deposit1 = TestDataGenerator.generateDepositForTransfer();
+        double deposit2 = TestDataGenerator.generateDepositForTransfer();
+        double deposit3 = TestDataGenerator.generateDepositForTransfer();
+
+        //making deposits
         for (double depositAmount : new double[]{deposit1, deposit2, deposit3}) {
             DepositRequest depositRequest = DepositRequest.builder()
                     .id(sourceAccountId)
@@ -262,7 +307,7 @@ public class TransferTest {
 
         double totalDepositAmount = deposit1 + deposit2 + deposit3;
         double expectedSourceBalance = totalDepositAmount;
-        double expectedDestinationBalance = 0;
+        double expectedDestinationBalance = 0;//🐝 Expected balance according to the test scenario, not arbitrary test data.
 
         TransferRequest transferRequest = TransferRequest.builder()
                 .senderAccountId(sourceAccountId)
@@ -270,15 +315,26 @@ public class TransferTest {
                 .amount(transferAmount)
                 .build();
 
-        new TransferRequester(userSpec, ResponseSpecs.requestReturnsBadRequestWithText("Transfer amount cannot exceed 10000"))
+        new TransferRequester(userSpec, ResponseSpecs.requestReturnsBadRequestWithText(AlertMessage.TRANSFER_AMOUNT_EXCEEDS_LIMIT.getMessage()))
                 .makeTransfer(transferRequest);
 
-        new GetAccountsRequester(userSpec, ResponseSpecs.requestReturnsOK())
+        AccountResponse[] accountsAfterTransfer = new GetAccountsRequester(userSpec, ResponseSpecs.requestReturnsOK())
                 .getAccounts()
-                .body("find {it.id == " + sourceAccountId + " }.balance",
-                        equalTo((float) expectedSourceBalance))
-                .body("find { it.id == " + destinationAccountId + " }.balance",
-                        equalTo((float) expectedDestinationBalance));
+                .extract()
+                .as(AccountResponse[].class);
+
+        AccountResponse sourceAccountAfterTransfer = Arrays.stream(accountsAfterTransfer)
+                .filter(account -> account.getId() == sourceAccountId)
+                .findFirst()
+                .orElseThrow();
+
+        AccountResponse destinationAccountAfterTransfer = Arrays.stream(accountsAfterTransfer)
+                .filter(account -> account.getId() == destinationAccountId)
+                .findFirst()
+                .orElseThrow();
+
+        assertEquals(expectedSourceBalance, sourceAccountAfterTransfer.getBalance());
+        assertEquals(expectedDestinationBalance, destinationAccountAfterTransfer.getBalance());
     }
 
     @Test
@@ -303,24 +359,33 @@ public class TransferTest {
         new CreateAccountRequester(userSpec, ResponseSpecs.entityWasCreated())
                 .createAccount();
 
-        int sourceAccountId = new GetAccountsRequester(
+        AccountResponse[] sourceAccounts = new GetAccountsRequester(
                 userSpec, ResponseSpecs.requestReturnsOK())
                 .getAccounts()
                 .extract()
-                .path("[0].id");
+                .as(AccountResponse[].class);
+
+        int sourceAccountId = sourceAccounts[0].getId();
 
         //create destination account
         new CreateAccountRequester(userSpec, ResponseSpecs.entityWasCreated())
                 .createAccount();
 
-        int destinationAccountId = new GetAccountsRequester(
+        AccountResponse[] destinationAccounts = new GetAccountsRequester(
                 userSpec, ResponseSpecs.requestReturnsOK())
                 .getAccounts()
                 .extract()
-                .path("find {it.id != " + sourceAccountId + "}.id");
+                .as(AccountResponse[].class);
 
-        double depositAmount = 5000;
-        double transferAmount = -100;
+        int destinationAccountId = Arrays.stream(destinationAccounts)
+                .filter(account -> account.getId() != sourceAccountId)
+                .findFirst()
+                .orElseThrow()
+                .getId();
+
+
+        double depositAmount = TestDataGenerator.generateDepositAmount();
+        double transferAmount = TestDataGenerator.generateNegativeTransferAmount(depositAmount);
 
         DepositRequest depositRequest = DepositRequest.builder()
                 .id(sourceAccountId)
@@ -333,7 +398,8 @@ public class TransferTest {
                 .makeDeposit(depositRequest);
 
         double expectedSourceBalance = depositAmount;
-        double expectedDestinationBalance = 0;
+        double expectedDestinationBalance = 0;//🐝 Expected balance is 0 because the destination account is newly created
+// and the rejected transfer must not change its balance.
 
         TransferRequest transferRequest = TransferRequest.builder()
                 .senderAccountId(sourceAccountId)
@@ -341,16 +407,27 @@ public class TransferTest {
                 .amount(transferAmount)
                 .build();
 
-        new TransferRequester(userSpec, ResponseSpecs.requestReturnsBadRequestWithText("Transfer amount must be at least 0.01"))
+        new TransferRequester(userSpec, ResponseSpecs.requestReturnsBadRequestWithText(AlertMessage.TRANSFER_AMOUNT_TOO_LOW.getMessage()))
                 .makeTransfer(transferRequest);
 
-        new GetAccountsRequester(userSpec, ResponseSpecs.requestReturnsOK())
+        AccountResponse[] accountsAfterTransfer = new GetAccountsRequester(userSpec, ResponseSpecs.requestReturnsOK())
                 .getAccounts()
-                .body("find {it.id == " + sourceAccountId + " }.balance",
-                        equalTo((float) expectedSourceBalance))
-                .body("find { it.id == " + destinationAccountId + " }.balance",
-                        equalTo((float) expectedDestinationBalance));
+                .extract()
+                .as(AccountResponse[].class);
 
+        AccountResponse sourceAccountAfterTransfer = Arrays.stream(accountsAfterTransfer)
+                .filter(account -> account.getId() == sourceAccountId)
+                .findFirst()
+                .orElseThrow();
+
+
+        AccountResponse destinationAccountAfterTranfer = Arrays.stream(accountsAfterTransfer)
+                .filter(account -> account.getId() != sourceAccountId)
+                .findFirst()
+                .orElseThrow();
+
+        assertEquals(expectedSourceBalance, sourceAccountAfterTransfer.getBalance());
+        assertEquals(expectedDestinationBalance, destinationAccountAfterTranfer.getBalance());
     }
 
     @Test
@@ -374,24 +451,33 @@ public class TransferTest {
         new CreateAccountRequester(userSpec, ResponseSpecs.entityWasCreated())
                 .createAccount();
 
-        int sourceAccountId = new GetAccountsRequester(
+        AccountResponse[] sourceAccounts = new GetAccountsRequester(
                 userSpec, ResponseSpecs.requestReturnsOK())
                 .getAccounts()
                 .extract()
-                .path("[0].id");
+                .as(AccountResponse[].class);
+
+        int sourceAccountId = sourceAccounts[0].getId();
+
 
         //create destination account
         new CreateAccountRequester(userSpec, ResponseSpecs.entityWasCreated())
                 .createAccount();
 
-        int destinationAccountId = new GetAccountsRequester(
+        AccountResponse[] destinationAccounts = new GetAccountsRequester(
                 userSpec, ResponseSpecs.requestReturnsOK())
                 .getAccounts()
                 .extract()
-                .path("find {it.id != " + sourceAccountId + "}.id");
+                .as(AccountResponse[].class);
 
-        double depositAmount = 5000;
-        double transferAmount = 5100;
+        int destinationAccountId = Arrays.stream(destinationAccounts)
+                .filter(account -> account.getId() != sourceAccountId)
+                .findFirst()
+                .orElseThrow()
+                .getId();
+
+        double depositAmount = TestDataGenerator.generateDepositAmount();
+        double transferAmount = TestDataGenerator.generateTransferAmountAboveBalance(depositAmount);
 
         DepositRequest depositRequest = DepositRequest.builder()
                 .id(sourceAccountId)
@@ -404,7 +490,8 @@ public class TransferTest {
                 .makeDeposit(depositRequest);
 
         double expectedSourceBalance = depositAmount;
-        double expectedDestinationBalance = 0;
+        double expectedDestinationBalance = 0;// 🐝 Expected balance is 0 because the destination account is newly created
+// and the rejected transfer must not change its balance. QUOTE: "фиксированные значения оставляем только там, где конкретное значение является частью самого тестового сценария или необходимо для проверки граничного случая."
 
         TransferRequest transferRequest = TransferRequest.builder()
                 .senderAccountId(sourceAccountId)
@@ -415,13 +502,23 @@ public class TransferTest {
         new TransferRequester(userSpec, ResponseSpecs.requestReturnsBadRequestWithText("Invalid transfer: insufficient funds or invalid accounts"))
                 .makeTransfer(transferRequest);
 
-        new GetAccountsRequester(userSpec, ResponseSpecs.requestReturnsOK())
+        AccountResponse[] accountsAfterTransfer = new GetAccountsRequester(userSpec, ResponseSpecs.requestReturnsOK())
                 .getAccounts()
-                .body("find {it.id == " + sourceAccountId + " }.balance",
-                        equalTo((float) expectedSourceBalance))
-                .body("find { it.id == " + destinationAccountId + " }.balance",
-                        equalTo((float) expectedDestinationBalance));
+                .extract()
+                .as(AccountResponse[].class);
 
+        AccountResponse sourceAccountAfterTransfer = Arrays.stream(accountsAfterTransfer)
+                .filter(account -> account.getId() == sourceAccountId)
+                .findFirst()
+                .orElseThrow();
+
+        AccountResponse destinationAccountAfterTransfer = Arrays.stream(accountsAfterTransfer)
+                .filter(account -> account.getId() != sourceAccountId)
+                .findFirst()
+                .orElseThrow();
+
+        assertEquals(expectedSourceBalance, sourceAccountAfterTransfer.getBalance());
+        assertEquals(expectedDestinationBalance, destinationAccountAfterTransfer.getBalance());
     }
 }
 

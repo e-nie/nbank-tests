@@ -40,4 +40,19 @@ public class TestDataGenerator {
 
         return invalidNames[random.nextInt(invalidNames.length)];
     }
+
+    public static double generateDepositForTransfer() {
+        return random.nextInt(3_334_00, 500_001) / 100.0;
+    }
+
+    public static double generateNegativeTransferAmount(double depositAmount) {
+        int maxCents = (int) Math.round(depositAmount * 100);
+        return -random.nextInt(1, maxCents + 1) / 100.0;
+    }
+
+    public static double generateTransferAmountAboveBalance(double depositAmount) {
+        int minCents = (int) Math.round(depositAmount * 100) + 1;
+        return random.nextInt(minCents, 1_000_001) / 100.0;
+    }
+
 }
