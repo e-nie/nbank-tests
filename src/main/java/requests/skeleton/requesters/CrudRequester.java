@@ -11,7 +11,7 @@ import requests.skeleton.intefaces.CrudEndpointInterface;
 import static io.restassured.RestAssured.given;
 
 public class CrudRequester extends HttpRequest implements CrudEndpointInterface {
-    public CrudRequester(RequestSpecification requestSpecification, Endpoint endpoint,ResponseSpecification responseSpecification) {
+    public CrudRequester(RequestSpecification requestSpecification, Endpoint endpoint, ResponseSpecification responseSpecification) {
         super(requestSpecification, endpoint, responseSpecification);
     }
 
@@ -27,9 +27,26 @@ public class CrudRequester extends HttpRequest implements CrudEndpointInterface 
                 .spec(responseSpecification);
     }
 
+    // Выполняет GET-запрос для получения конкретного ресурса по его ID.
     @Override
-    public Object get(long id) {
-        return null;
+    public ValidatableResponse get(long id) {
+        return given()
+                .spec(requestSpecification)
+                .get(endpoint.getUrl())
+                .then()
+                .assertThat()
+                .spec(responseSpecification);
+    }
+    // Перегруженный метод для GET-запроса без ID
+    // Выполняет GET-запрос без ID для получения списка ресурсов.
+    // Возвращает HTTP-ответ для дальнейшей проверки и десериализации.
+    public ValidatableResponse get() {
+        return given()
+                .spec(requestSpecification)
+                .get(endpoint.getUrl())
+                .then()
+                .assertThat()
+                .spec(responseSpecification);
     }
 
     @Override

@@ -23,6 +23,15 @@ public enum Endpoint {
             "/accounts",
             BaseModel.class,
             CreateAccountResponse.class
+    ),
+    DEPOSIT("/accounts/deposit",
+            DepositRequest.class,
+            BaseModel.class
+    ),
+    CUSTOMER_ACCOUNTS(
+            "/customer/accounts",
+            BaseModel.class,
+            AccountResponse.class
     );
 
 
