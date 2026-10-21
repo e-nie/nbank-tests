@@ -2,6 +2,7 @@ package iteration2;
 
 import enums.AlertMessage;
 import generators.RandomData;
+import generators.RandomModelGenerator;
 import generators.TestDataGenerator;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
@@ -194,10 +195,10 @@ class DepositTest extends BaseTest {
         long accountBId = accountB.getId();
 
         // Prepare a deposit request for user B's account.
-        DepositRequest depositRequest = DepositRequest.builder()
-                .id(accountBId)
-                .balance(TestDataGenerator.generateDepositAmount())
-                .build();
+        DepositRequest depositRequest =
+                RandomModelGenerator.generate(DepositRequest.class);
+
+        depositRequest.setId(accountBId);
 
         // Attempt to deposit money into user B's account while authenticated as user A.
         new CrudRequester(
@@ -230,10 +231,10 @@ class DepositTest extends BaseTest {
         CreateUserRequest userRequest = AdminSteps.createUser();
 
         // Prepare a deposit request for a non-existing account.
-        DepositRequest depositRequest = DepositRequest.builder()
-                .id(TestDataGenerator.generateNonExistingAccountId())
-                .balance(TestDataGenerator.generateDepositAmount())
-                .build();
+        DepositRequest depositRequest =
+                RandomModelGenerator.generate(DepositRequest.class);
+
+        depositRequest.setId(TestDataGenerator.generateNonExistingAccountId());// Keep TestDataGenerator for negative test scenarios.
 
         new CrudRequester(
                 RequestSpecs.authAsUser(userRequest.getUsername(), userRequest.getPassword()),

@@ -2,6 +2,7 @@ package iteration2;
 
 import enums.AlertMessage;
 import generators.RandomData;
+import generators.RandomModelGenerator;
 import generators.TestDataGenerator;
 import io.restassured.response.ValidatableResponse;
 import io.restassured.specification.RequestSpecification;
@@ -13,9 +14,13 @@ import org.junit.jupiter.api.Test;
 import requests.AdminCreateUserRequester;
 import requests.ChangeProfileRequester;
 import requests.GetProfileRequester;
+import requests.skeleton.Endpoint;
+import requests.skeleton.requesters.CrudRequester;
+import requests.steps.AdminSteps;
 import specs.RequestSpecs;
 import specs.ResponseSpecs;
 
+import java.util.Random;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -28,41 +33,39 @@ public class ProfileTest {
     @Test
     public void userCanUpdateProfileNameTest() {
 
-        CreateUserRequest userRequest = CreateUserRequest.builder()
-                .username(RandomData.getUsername())
-                .password(RandomData.getPassword())
-                .role(UserRole.USER.toString())
-                .build();
+        CreateUserRequest userRequest = AdminSteps.createUser();
 
-        new AdminCreateUserRequester(
-                RequestSpecs.adminSpec(),
-                ResponseSpecs.entityWasCreated())//
-                .createUser(userRequest);
-
-
-        RequestSpecification userSpec = RequestSpecs.authAsUser(
+        GetProfileResponse profile = new CrudRequester(RequestSpecs.authAsUser(
                 userRequest.getUsername(),
-                userRequest.getPassword()
-        );
-
-        GetProfileResponse profile = new GetProfileRequester(userSpec, ResponseSpecs.requestReturnsOK())
-                .getProfile()
+                userRequest.getPassword()),
+                Endpoint.PROFILE,
+                ResponseSpecs.requestReturnsOK())
+                .get()
                 .extract()
                 .as(GetProfileResponse.class);// profile object
 
         assertNull(profile.getName());
 
+        ChangeProfileRequest changeProfileRequest =
+                RandomModelGenerator.generate(ChangeProfileRequest.class);
 
-        String newUserName = TestDataGenerator.generateProfileName();
-        ChangeProfileRequest changeProfileRequest = ChangeProfileRequest.builder()
-                .name(newUserName)
-                .build();
+        String newUserName = changeProfileRequest.getName();
 
-        ValidatableResponse responseAfterUpdate = new ChangeProfileRequester(userSpec, ResponseSpecs.requestReturnsOK())
-                .changeProfile(changeProfileRequest);
+        new CrudRequester(
+                RequestSpecs.authAsUser(
+                        userRequest.getUsername(),
+                        userRequest.getPassword()),
+                Endpoint.PROFILE,
+                ResponseSpecs.requestReturnsOK())
+                .update(changeProfileRequest);
 
-        GetProfileResponse updatedProfile = new GetProfileRequester(userSpec, ResponseSpecs.requestReturnsOK())
-                .getProfile()
+        GetProfileResponse updatedProfile = new CrudRequester(
+                RequestSpecs.authAsUser(
+                        userRequest.getUsername(),
+                        userRequest.getPassword()),
+                Endpoint.PROFILE,
+                ResponseSpecs.requestReturnsOK())
+                .get()
                 .extract()
                 .as(GetProfileResponse.class);
 
@@ -71,29 +74,20 @@ public class ProfileTest {
 
     @Test
     public void userCannotUpdateProfileWithInvalidNameTest() {
-        CreateUserRequest userRequest = CreateUserRequest.builder()
-                .username(RandomData.getUsername())
-                .password(RandomData.getPassword())
-                .role(UserRole.USER.toString())
-                .build();
+        CreateUserRequest userRequest = AdminSteps.createUser();
 
-        new AdminCreateUserRequester(
-                RequestSpecs.adminSpec(),
-                ResponseSpecs.entityWasCreated())
-                .createUser(userRequest);
-
-
-        RequestSpecification userSpec = RequestSpecs.authAsUser(
-                userRequest.getUsername(),
-                userRequest.getPassword()
-        );
-
-        GetProfileResponse profileBeforeUpdate = new GetProfileRequester(userSpec, ResponseSpecs.requestReturnsOK())
-                .getProfile()
+        GetProfileResponse profileBeforeUpdate = new CrudRequester(
+                RequestSpecs.authAsUser(
+                        userRequest.getUsername(),
+                        userRequest.getPassword()),
+                Endpoint.PROFILE,
+                ResponseSpecs.requestReturnsOK())
+                .get()
                 .extract()
                 .as(GetProfileResponse.class);
 
         assertNull(profileBeforeUpdate.getName());//check the initial field state
+
 
         String invalidName = TestDataGenerator.generateInvalidProfileName();//invalid format for profile name
 
@@ -102,13 +96,22 @@ public class ProfileTest {
                 .name(invalidName)
                 .build();
 
+        new CrudRequester(
+                RequestSpecs.authAsUser(
+                        userRequest.getUsername(),
+                        userRequest.getPassword()),
+                Endpoint.PROFILE,
+                ResponseSpecs.requestReturnsBadRequestWithText(AlertMessage.INVALID_PROFILE_NAME.getMessage()))
+                .update(changeProfileRequest);
 
-        new ChangeProfileRequester(userSpec, ResponseSpecs.requestReturnsBadRequestWithText(AlertMessage.INVALID_PROFILE_NAME.getMessage()))
-                .changeProfile(changeProfileRequest);
 
-
-        GetProfileResponse profileAfterUpdate = new GetProfileRequester(userSpec, ResponseSpecs.requestReturnsOK())
-                .getProfile()
+        GetProfileResponse profileAfterUpdate = new CrudRequester(
+                RequestSpecs.authAsUser(
+                        userRequest.getUsername(),
+                        userRequest.getPassword()),
+                Endpoint.PROFILE,
+                ResponseSpecs.requestReturnsOK())
+                .get()
                 .extract()
                 .as(GetProfileResponse.class);
 

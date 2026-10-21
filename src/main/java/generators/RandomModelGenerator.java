@@ -11,7 +11,7 @@ public class RandomModelGenerator {
 
     private static final Random random = new Random();
 
-    public static  <T> T generate(Class<T> clazz) {
+    public static <T> T generate(Class<T> clazz) {
         try {
             T instance = clazz.getDeclaredConstructor().newInstance();
             for (Field field : getAllFields(clazz)) {
@@ -70,6 +70,8 @@ public class RandomModelGenerator {
             return Integer.parseInt(result);
         } else if (type.equals(Long.class) || type.equals(long.class)) {
             return Long.parseLong(result);
+        } else if (type.equals(Double.class) || type.equals(double.class)) {
+            return Double.parseDouble(result);
         } else {
             return result;
         }

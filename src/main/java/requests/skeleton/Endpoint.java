@@ -32,6 +32,11 @@ public enum Endpoint {
             "/customer/accounts",
             BaseModel.class,
             AccountResponse.class
+    ),
+    PROFILE(
+            "/customer/profile",
+            BaseModel.class,
+            GetProfileResponse.class
     );
 
 

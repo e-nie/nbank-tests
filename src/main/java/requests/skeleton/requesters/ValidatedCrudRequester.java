@@ -26,7 +26,7 @@ public class ValidatedCrudRequester<T extends BaseModel> extends HttpRequest imp
     }
 
     @Override
-    public Object update(long id, BaseModel model) {
+    public Object update( BaseModel model) {
         return null;
     }
 

@@ -7,7 +7,7 @@ public interface CrudEndpointInterface {
 
     Object get(long id);
 
-    Object update(long id, BaseModel model);
+    Object update( BaseModel model);
 
     Object delete(long id);
 
