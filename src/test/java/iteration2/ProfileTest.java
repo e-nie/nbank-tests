@@ -1,31 +1,17 @@
 package iteration2;
 
 import enums.AlertMessage;
-import generators.RandomData;
 import generators.RandomModelGenerator;
 import generators.TestDataGenerator;
-import io.restassured.response.ValidatableResponse;
-import io.restassured.specification.RequestSpecification;
 import models.ChangeProfileRequest;
 import models.CreateUserRequest;
 import models.GetProfileResponse;
-import models.UserRole;
+import models.comparison.ModelAssertions;
 import org.junit.jupiter.api.Test;
-import requests.AdminCreateUserRequester;
-import requests.ChangeProfileRequester;
-import requests.GetProfileRequester;
-import requests.skeleton.Endpoint;
-import requests.skeleton.requesters.CrudRequester;
 import requests.steps.AdminSteps;
-import specs.RequestSpecs;
+import requests.steps.UserSteps;
 import specs.ResponseSpecs;
 
-import java.util.Random;
-import java.util.UUID;
-
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class ProfileTest {
@@ -35,56 +21,28 @@ public class ProfileTest {
 
         CreateUserRequest userRequest = AdminSteps.createUser();
 
-        GetProfileResponse profile = new CrudRequester(RequestSpecs.authAsUser(
-                userRequest.getUsername(),
-                userRequest.getPassword()),
-                Endpoint.PROFILE,
-                ResponseSpecs.requestReturnsOK())
-                .get()
-                .extract()
-                .as(GetProfileResponse.class);// profile object
+        GetProfileResponse profile = UserSteps.getProfile(userRequest);
 
         assertNull(profile.getName());
 
-        ChangeProfileRequest changeProfileRequest =
-                RandomModelGenerator.generate(ChangeProfileRequest.class);
+        ChangeProfileRequest changeProfileRequest = RandomModelGenerator.generate(ChangeProfileRequest.class);
 
-        String newUserName = changeProfileRequest.getName();
+        //update profile
+        UserSteps.updateProfile(
+                userRequest,
+                changeProfileRequest,
+                ResponseSpecs.requestReturnsOK());
 
-        new CrudRequester(
-                RequestSpecs.authAsUser(
-                        userRequest.getUsername(),
-                        userRequest.getPassword()),
-                Endpoint.PROFILE,
-                ResponseSpecs.requestReturnsOK())
-                .update(changeProfileRequest);
+        GetProfileResponse updatedProfile = UserSteps.getProfile(userRequest);
 
-        GetProfileResponse updatedProfile = new CrudRequester(
-                RequestSpecs.authAsUser(
-                        userRequest.getUsername(),
-                        userRequest.getPassword()),
-                Endpoint.PROFILE,
-                ResponseSpecs.requestReturnsOK())
-                .get()
-                .extract()
-                .as(GetProfileResponse.class);
-
-        assertEquals(newUserName, updatedProfile.getName());
+        ModelAssertions.assertThatModels(changeProfileRequest, updatedProfile).match();
     }
 
     @Test
     public void userCannotUpdateProfileWithInvalidNameTest() {
         CreateUserRequest userRequest = AdminSteps.createUser();
 
-        GetProfileResponse profileBeforeUpdate = new CrudRequester(
-                RequestSpecs.authAsUser(
-                        userRequest.getUsername(),
-                        userRequest.getPassword()),
-                Endpoint.PROFILE,
-                ResponseSpecs.requestReturnsOK())
-                .get()
-                .extract()
-                .as(GetProfileResponse.class);
+        GetProfileResponse profileBeforeUpdate = UserSteps.getProfile(userRequest);
 
         assertNull(profileBeforeUpdate.getName());//check the initial field state
 
@@ -96,24 +54,14 @@ public class ProfileTest {
                 .name(invalidName)
                 .build();
 
-        new CrudRequester(
-                RequestSpecs.authAsUser(
-                        userRequest.getUsername(),
-                        userRequest.getPassword()),
-                Endpoint.PROFILE,
-                ResponseSpecs.requestReturnsBadRequestWithText(AlertMessage.INVALID_PROFILE_NAME.getMessage()))
-                .update(changeProfileRequest);
+        UserSteps.updateProfile(
+                userRequest,
+                changeProfileRequest,
+                ResponseSpecs.requestReturnsBadRequestWithText(
+                        AlertMessage.INVALID_PROFILE_NAME.getMessage()));
 
-
-        GetProfileResponse profileAfterUpdate = new CrudRequester(
-                RequestSpecs.authAsUser(
-                        userRequest.getUsername(),
-                        userRequest.getPassword()),
-                Endpoint.PROFILE,
-                ResponseSpecs.requestReturnsOK())
-                .get()
-                .extract()
-                .as(GetProfileResponse.class);
+        GetProfileResponse profileAfterUpdate =
+                UserSteps.getProfile(userRequest);
 
         assertNull(profileAfterUpdate.getName());
     }

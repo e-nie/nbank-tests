@@ -1,32 +1,22 @@
 package iteration2;
 
 import enums.AlertMessage;
-import generators.RandomData;
 import generators.RandomModelGenerator;
 import generators.TestDataGenerator;
-import io.restassured.http.ContentType;
-import io.restassured.response.Response;
-import io.restassured.response.ValidatableResponse;
 import iteration1.BaseTest;
-import models.*;
+import models.CreateAccountResponse;
+import models.CreateUserRequest;
+import models.DepositRequest;
+import models.comparison.ModelAssertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import requests.AdminCreateUserRequester;
-import requests.CreateAccountRequester;
-import requests.GetAccountsRequester;
-import requests.MakeDepositRequester;
-import requests.skeleton.Endpoint;
-import requests.skeleton.requesters.CrudRequester;
-import requests.skeleton.requesters.ValidatedCrudRequester;
 import requests.steps.AdminSteps;
 import requests.steps.UserSteps;
-import specs.RequestSpecs;
 import specs.ResponseSpecs;
 
 import java.util.Arrays;
 
-import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
@@ -58,31 +48,23 @@ class DepositTest extends BaseTest {
                 .build();
 
         // Отправляем POST-запрос на пополнение счёта
-        new CrudRequester(
-                RequestSpecs.authAsUser(userRequest.getUsername(), userRequest.getPassword()),
-                Endpoint.DEPOSIT,
-                ResponseSpecs.requestReturnsOK())
-                .post(depositRequest);
+        UserSteps.makeDeposit(
+                userRequest,
+                depositRequest,
+                ResponseSpecs.requestReturnsOK());
 
+        // Получаем счета после депозита
+        CreateAccountResponse[] accountsAfterDeposit = UserSteps.getAccounts(userRequest);
 
-        //проверяем баланс после депозита
-        ValidatableResponse responseAfterDeposit = new CrudRequester(
-                RequestSpecs.authAsUser(userRequest.getUsername(),
-                        userRequest.getPassword()),
-                Endpoint.CUSTOMER_ACCOUNTS,
-                ResponseSpecs.requestReturnsOK())
-                .get();
+        // Находим нужный счёт
+        CreateAccountResponse accountAfterDeposit = Arrays.stream(accountsAfterDeposit)
+                .filter(a -> a.getId() == accountId)
+                .findFirst()
+                .orElseThrow();
 
-        AccountResponse[] accountsAfterDeposit =
-                responseAfterDeposit.extract().as(AccountResponse[].class);
+        // Сравниваем сумму депозита с итоговым балансом
+        ModelAssertions.assertThatModels(depositRequest, accountAfterDeposit).match();
 
-        assertEquals(amount,
-                Arrays.stream(accountsAfterDeposit)
-                        .filter(a -> a.getId() == accountId)
-                        .findFirst()
-                        .orElseThrow()
-                        .getBalance()
-        );
     }
 
     @Test
@@ -107,23 +89,17 @@ class DepositTest extends BaseTest {
 
         // Авторизуемся под пользователем и отправляем POST-запрос
         // с отрицательной суммой. Проверяем, что сервер отклоняет депозит.
-        new CrudRequester(
-                RequestSpecs.authAsUser(userRequest.getUsername(), userRequest.getPassword()),
-                Endpoint.DEPOSIT,
-                ResponseSpecs.requestReturnsBadRequestWithText(AlertMessage.DEPOSIT_AMOUNT_TOO_LOW.getMessage()))
-                .post(depositRequest);
-
+        UserSteps.makeDeposit(
+                userRequest,
+                depositRequest,
+                ResponseSpecs.requestReturnsBadRequestWithText(
+                        AlertMessage.DEPOSIT_AMOUNT_TOO_LOW.getMessage()));
 
         // Получаем счета пользователя после отклонённого депозита,
         // чтобы убедиться, что баланс не изменился.
-        ValidatableResponse responseAfterDeposit = new CrudRequester(
-                RequestSpecs.authAsUser(userRequest.getUsername(),
-                        userRequest.getPassword()),
-                Endpoint.CUSTOMER_ACCOUNTS,
-                ResponseSpecs.requestReturnsOK())
-                .get();//метод реквестера с самим запросом
+        CreateAccountResponse[] accountsAfterDeposit =
+                UserSteps.getAccounts(userRequest);
 
-        AccountResponse[] accountsAfterDeposit = responseAfterDeposit.extract().as(AccountResponse[].class);
         assertEquals(0.0,
                 Arrays.stream(accountsAfterDeposit)
                         .filter(a -> a.getId() == accountId)
@@ -152,23 +128,16 @@ class DepositTest extends BaseTest {
 
         // Отправляем депозит выше допустимого максимума.
         // Проверяем статус 400 и текст ошибки.
-        new CrudRequester(
-                RequestSpecs.authAsUser(userRequest.getUsername(), userRequest.getPassword()),
-                Endpoint.DEPOSIT,
-                ResponseSpecs.requestReturnsBadRequestWithText(AlertMessage.DEPOSIT_AMOUNT_TOO_HIGH.getMessage()))
-                .post(depositRequest);
+        UserSteps.makeDeposit(
+                userRequest,
+                depositRequest,
+                ResponseSpecs.requestReturnsBadRequestWithText(
+                        AlertMessage.DEPOSIT_AMOUNT_TOO_HIGH.getMessage()));
 
         // Получаем счета пользователя после отклонённого депозита.
-        ValidatableResponse responseAfterDeposit = new CrudRequester(
-                RequestSpecs.authAsUser(userRequest.getUsername(),
-                        userRequest.getPassword()),
-                Endpoint.CUSTOMER_ACCOUNTS,
-                ResponseSpecs.requestReturnsOK())
-                .get();
-
         // Десериализуем JSON-массив в массив объектов AccountResponse.
-        AccountResponse[] accountsAfterDeposit =
-                responseAfterDeposit.extract().as(AccountResponse[].class);
+        CreateAccountResponse[] accountsAfterDeposit = UserSteps.getAccounts(userRequest);
+
 
         // Находим созданный счёт по ID и проверяем,
         // что его баланс остался нулевым.
@@ -201,22 +170,15 @@ class DepositTest extends BaseTest {
         depositRequest.setId(accountBId);
 
         // Attempt to deposit money into user B's account while authenticated as user A.
-        new CrudRequester(
-                RequestSpecs.authAsUser(userARequest.getUsername(), userARequest.getPassword()),
-                Endpoint.DEPOSIT,
-                ResponseSpecs.requestReturnsForbidden(AlertMessage.UNAUTHORIZED_ACCESS.getMessage()))
-                .post(depositRequest);
+        UserSteps.makeDeposit(
+                userARequest,
+                depositRequest,
+                ResponseSpecs.requestReturnsForbidden(
+                        AlertMessage.UNAUTHORIZED_ACCESS.getMessage()));
 
         // Retrieve user B's accounts after the deposit attempt.
-        ValidatableResponse responseBAfterDeposit = new CrudRequester(
-                RequestSpecs.authAsUser(userBRequest.getUsername(),
-                        userBRequest.getPassword()),
-                Endpoint.CUSTOMER_ACCOUNTS,
-                ResponseSpecs.requestReturnsOK())
-                .get();
-
-        AccountResponse[] accountsBAfterDeposit =
-                responseBAfterDeposit.extract().as(AccountResponse[].class);
+        CreateAccountResponse[] accountsBAfterDeposit =
+                UserSteps.getAccounts(userBRequest);
 
         // Verify that user B's account balance remains zero.
         assertEquals(0.0, Arrays.stream(accountsBAfterDeposit)
@@ -231,27 +193,19 @@ class DepositTest extends BaseTest {
         CreateUserRequest userRequest = AdminSteps.createUser();
 
         // Prepare a deposit request for a non-existing account.
-        DepositRequest depositRequest =
-                RandomModelGenerator.generate(DepositRequest.class);
+        DepositRequest depositRequest = RandomModelGenerator.generate(DepositRequest.class);
 
         depositRequest.setId(TestDataGenerator.generateNonExistingAccountId());// Keep TestDataGenerator for negative test scenarios.
 
-        new CrudRequester(
-                RequestSpecs.authAsUser(userRequest.getUsername(), userRequest.getPassword()),
-                Endpoint.DEPOSIT,
-                ResponseSpecs.requestReturnsForbidden(AlertMessage.UNAUTHORIZED_ACCESS.getMessage()))
-                .post(depositRequest);
+        UserSteps.makeDeposit(
+                userRequest,
+                depositRequest,
+                ResponseSpecs.requestReturnsForbidden(
+                        AlertMessage.UNAUTHORIZED_ACCESS.getMessage()));
 
         // Verify that the user still has no bank accounts.
-        ValidatableResponse responseAfterDeposit = new CrudRequester(
-                RequestSpecs.authAsUser(userRequest.getUsername(),
-                        userRequest.getPassword()),
-                Endpoint.CUSTOMER_ACCOUNTS,
-                ResponseSpecs.requestReturnsOK())
-                .get();
+        CreateAccountResponse[] accountsAfterDeposit = UserSteps.getAccounts(userRequest);
 
-        // Deserialize the response into an array of accounts.
-        AccountResponse[] accountsAfterDeposit = responseAfterDeposit.extract().as(AccountResponse[].class);
         assertEquals(0, accountsAfterDeposit.length);
     }
 }

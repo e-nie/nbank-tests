@@ -10,8 +10,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class TransferResponse extends BaseModel{
-    private int receiverAccountId;
-    private int senderAccountId;
+    private long receiverAccountId;
+    private long senderAccountId;
     private String message;
     private double amount;
 

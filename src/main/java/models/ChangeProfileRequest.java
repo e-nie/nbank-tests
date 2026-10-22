@@ -13,6 +13,6 @@ import lombok.NoArgsConstructor;
 
 public class ChangeProfileRequest extends BaseModel {
 
-    @GeneratingRule(regex = "^[A-Za-z]+ [A-Za-z]+$")
+    @GeneratingRule(regex = "^[A-Za-z]{3,10} [A-Za-z]{3,10}$")
     private String name;
 }
