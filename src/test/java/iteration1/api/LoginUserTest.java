@@ -1,7 +1,5 @@
-package iteration1;
+package iteration1.api;
 
-import generators.RandomData;
-import generators.RandomModelGenerator;
 import models.*;
 import org.junit.jupiter.api.Test;
 import requests.skeleton.Endpoint;
