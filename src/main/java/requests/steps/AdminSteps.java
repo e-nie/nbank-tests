@@ -12,6 +12,7 @@ import specs.ResponseSpecs;
 
 public class AdminSteps {
 
+
     public static CreateUserRequest createUser() {
         CreateUserRequest userRequest = RandomModelGenerator.generate(CreateUserRequest.class);
 

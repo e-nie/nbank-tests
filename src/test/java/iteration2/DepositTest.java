@@ -3,7 +3,7 @@ package iteration2;
 import enums.AlertMessage;
 import generators.RandomModelGenerator;
 import generators.TestDataGenerator;
-import iteration1.BaseTest;
+import iteration1.api.BaseTest;
 import models.CreateAccountResponse;
 import models.CreateUserRequest;
 import models.DepositRequest;
