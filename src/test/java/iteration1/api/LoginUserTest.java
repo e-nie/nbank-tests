@@ -4,7 +4,6 @@ import models.*;
 import org.junit.jupiter.api.Test;
 import requests.skeleton.Endpoint;
 import requests.skeleton.requesters.CrudRequester;
-import requests.skeleton.requesters.ValidatedCrudRequester;
 import requests.steps.AdminSteps;
 import specs.RequestSpecs;
 import specs.ResponseSpecs;
@@ -20,7 +19,7 @@ public class LoginUserTest extends BaseTest {
                 .password("admin")
                 .build();
 
-        new ValidatedCrudRequester<CreateUserResponse>(RequestSpecs.unauthSpec(),
+        new CrudRequester(RequestSpecs.unauthSpec(),
                 Endpoint.LOGIN,
                 ResponseSpecs.requestReturnsOK())
                 .post(userRequest);

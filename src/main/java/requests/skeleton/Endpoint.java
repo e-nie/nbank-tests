@@ -19,10 +19,31 @@ public enum Endpoint {
             LoginUserResponse.class
 
     ),
+    //create new account
     ACCOUNTS(
             "/accounts",
             BaseModel.class,
             CreateAccountResponse.class
+    ),
+    DEPOSIT("/accounts/deposit",
+            DepositRequest.class,
+            BaseModel.class
+    ),
+    //get list of accounts
+    CUSTOMER_ACCOUNTS(
+            "/customer/accounts",
+            BaseModel.class,
+            CreateAccountResponse.class
+    ),
+    PROFILE(
+            "/customer/profile",
+            BaseModel.class,
+            GetProfileResponse.class
+    ),
+    TRANSFER(
+            "/accounts/transfer",
+            TransferRequest.class,
+            TransferResponse.class
     );
 
 

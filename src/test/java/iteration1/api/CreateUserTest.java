@@ -30,6 +30,7 @@ public class CreateUserTest extends BaseTest {
                 .post(createUserRequest);
 
         ModelAssertions.assertThatModels(createUserRequest, createUserResponse).match();
+        softly.assertThat(createUserRequest.getPassword()).isNotEqualTo(createUserResponse.getPassword());
     }
 
 
@@ -40,8 +41,6 @@ public class CreateUserTest extends BaseTest {
                 Arguments.of(" ", "Password!01", "USER", "username", "Username cannot be blank"),
                 Arguments.of("yo", "Password!01", "USER", "username", "Username must be between 3 and 15 characters"),
                 Arguments.of("yo9-_.$", "Password!01", "USER", "username", "Username must contain only letters, digits, dashes, underscores, and dots")
-
-
         );
     }
 
@@ -57,9 +56,7 @@ public class CreateUserTest extends BaseTest {
         new CrudRequester(RequestSpecs.adminSpec(),
                 Endpoint.ADMIN_USER,
                 ResponseSpecs.requestReturnsBadRequest(errorKey, errorValue))
-                .post(createUserRequest);
-
-
+                 .post(createUserRequest);
     }
 
 }

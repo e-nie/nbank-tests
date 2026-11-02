@@ -1,6 +1,5 @@
 package specs;
 
-import configs.Config;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.filter.log.RequestLoggingFilter;
 import io.restassured.filter.log.ResponseLoggingFilter;
@@ -10,12 +9,16 @@ import models.LoginUserRequest;
 import requests.skeleton.Endpoint;
 import requests.skeleton.requesters.CrudRequester;
 
-import java.util.HashMap;
 import java.util.List;
+
+import configs.Config;
+
+import java.util.HashMap;
 import java.util.Map;
 
 public class RequestSpecs {
-    private static Map<String, String> authHeaders = new HashMap<>(Map.of("admin", "Basic YWRtaW46YWRtaW4="));
+    private static Map<String, String> authHeaders =
+            new HashMap<>(Map.of("admin", "Basic YWRtaW46YWRtaW4="));
 
     private RequestSpecs() {
     }
@@ -40,10 +43,11 @@ public class RequestSpecs {
     }
 
     public static RequestSpecification authAsUser(String username, String password) {
-        //делаем запрос только если такого значения еще нет в мапе
+        // Делаем запрос, только если пользователя ещё нет в Map
         String userAuthHeader;
+
         if (!authHeaders.containsKey(username)) {
-            //достаем токен
+            // Получаем токен через POST-запрос
             userAuthHeader = new CrudRequester(
                     RequestSpecs.unauthSpec(),
                     Endpoint.LOGIN,
@@ -54,13 +58,16 @@ public class RequestSpecs {
                             .build())
                     .extract()
                     .header("Authorization");
+
+            // Сохраняем заголовок авторизации
             authHeaders.put(username, userAuthHeader);
         } else {
+            // Используем уже сохранённый заголовок
             userAuthHeader = authHeaders.get(username);
         }
+
         return defaultRequestBuilder()
                 .addHeader("Authorization", userAuthHeader)
                 .build();
-
     }
 }
