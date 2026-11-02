@@ -1,8 +1,6 @@
-package iteration1;
+package iteration1.api;
 
-import generators.RandomModelGenerator;
 import models.CreateUserRequest;
-import models.CreateUserResponse;
 import org.junit.jupiter.api.Test;
 import requests.skeleton.Endpoint;
 import requests.skeleton.requesters.CrudRequester;
@@ -20,9 +18,9 @@ public class CreateAccountTest {
         new CrudRequester(RequestSpecs.authAsUser(userRequest.getUsername(), userRequest.getPassword()),
                 Endpoint.ACCOUNTS,
                 ResponseSpecs.entityWasCreated())
-                .post(null);
+                .post(null);// запросить все аккаунты и удостовериться, что наш пользователь действительно создался
 
 
-// запросить все аккаунты и удостовериться, что наш пользователь действительно создался
+
     }
 }
