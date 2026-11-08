@@ -28,6 +28,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static com.codeborne.selenide.proxy.RequestMatcher.HttpMethod.POST;
 import static com.codeborne.selenide.proxy.RequestMatchers.urlEndsWith;
 
+import enums.AlertMessage;
+
 public class DepositTest {
     @BeforeAll
     public static void setupSelenoid() {
@@ -88,11 +90,7 @@ public class DepositTest {
         //click alerts between deposits
         String alertText = switchTo().alert().getText();
 
-        assertEquals(
-                "✅ Successfully deposited $" + amount
-                        + " to account " + account.getAccountNumber() + "!",
-                alertText
-        );
+        assertEquals(String.format(AlertMessage.SUCCESSFUL_DEPOSIT.getMessage(), amount, account.getAccountNumber()), alertText);
 
 
         switchTo().alert().accept();
@@ -149,7 +147,7 @@ public class DepositTest {
         String alertText = switchTo().alert().getText();
 
         assertEquals(
-                "❌ Please deposit less or equal to 5000$.",
+                AlertMessage.DEPOSIT_AMOUNT_TOO_HIGH_UI.getMessage(),
                 alertText
         );
         switchTo().alert().accept();
@@ -203,7 +201,7 @@ public class DepositTest {
         //click alerts between deposits
         String alertText = switchTo().alert().getText();
 
-        assertEquals("❌ Please enter a valid amount.", alertText);
+        assertEquals(AlertMessage.INVALID_DEPOSIT_AMOUNT.getMessage(), alertText);
 
         switchTo().alert().accept();
 
@@ -254,10 +252,7 @@ public class DepositTest {
         //get alert text
         String alertText = switchTo().alert().getText();
 
-        assertEquals(
-                "❌ Please select an account.",
-                alertText
-        );
+        assertEquals(AlertMessage.ACCOUNT_NOT_SELECTED.getMessage(), alertText);
         switchTo().alert().accept();
 
         CreateAccountResponse[] accountsAfterDeposit = UserSteps.getAccounts(userRequest);
@@ -367,7 +362,7 @@ public class DepositTest {
 
         String alertText = switchTo().alert().getText();
 
-        assertEquals("❌ Failed to deposit. Please try again.", alertText);
+        assertEquals(AlertMessage.DEPOSIT_UNSUCCESSFUL.getMessage(), alertText);
 
         switchTo().alert().accept();
 
