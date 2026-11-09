@@ -235,6 +235,53 @@ public class ProfileTest {
         GetProfileResponse userProfileAfterUpdate = UserSteps.getProfile(user);
         assertEquals(profileName, userProfileAfterUpdate.getName());
     }
+
+    @DisplayName("TC-12: Profile name contains invalid characters")
+    @ParameterizedTest
+    @ValueSource(strings = {"Anna123 Schmidt", "Anna@ Schmidt", "$nn% Schm_dt"})
+    public void userCannotUpdateProfileNameWithInvalidCharactersViaUiTest(String invalidName) {
+        CreateUserRequest userRequest = AdminSteps.createUser();
+        GetProfileResponse userProfileBeforeUpdate = UserSteps.getProfile(userRequest);
+
+        assertNull(userProfileBeforeUpdate.getName());
+
+        //get user token and save in local Storage
+        String userAuthHeader = new CrudRequester(
+                RequestSpecs.unauthSpec(),
+                Endpoint.LOGIN,
+                ResponseSpecs.requestReturnsOK())
+                .post(LoginUserRequest.builder()
+                        .username(userRequest.getUsername())
+                        .password(userRequest.getPassword())
+                        .build())
+                .extract()
+                .header("Authorization");
+
+        Selenide.open("/");
+
+        executeJavaScript("localStorage.setItem('authToken', arguments[0])", userAuthHeader);//saved in local storage
+        Selenide.open("/dashboard");
+
+        //Test Steps
+        $("span.user-name").shouldHave(exactText("Noname"));
+        $(".profile-header").click();
+        webdriver().shouldHave(urlContaining("/edit-profile"));
+
+        $("input[placeholder='Enter new name']").setValue(invalidName);
+        $$("button").findBy(exactText("\uD83D\uDCBE Save Changes")).click();
+
+        String alertText = switchTo().alert().getText();
+
+        assertEquals(AlertMessage.INVALID_PROFILE_NAME.getMessage(), alertText);
+
+        switchTo().alert().accept();
+
+        //verify the name was NOT updated in API
+        GetProfileResponse userProfileAfterUpdate = UserSteps.getProfile(userRequest);
+
+        assertNull(userProfileAfterUpdate.getName());
+    }
+
 }
 
 

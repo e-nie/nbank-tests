@@ -373,6 +373,4 @@ public class DepositTest {
         assertEquals(urlBeforeDeposit, WebDriverRunner.url());
         $(Selectors.byText("💰 Deposit Money")).shouldBe(Condition.visible);
     }
-
-
 }
