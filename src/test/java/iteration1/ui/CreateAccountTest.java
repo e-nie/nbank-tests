@@ -42,7 +42,7 @@ public class CreateAccountTest {
 
         //STEP 2: Admin creates a USER
 
-        //STEP 3: USER LOGS IN A BANK
+        //STEP 3: USER LOGS IN A BANK and gets a token
         CreateUserRequest user = AdminSteps.createUser();
         String userAuthHeader = new CrudRequester(
                 RequestSpecs.unauthSpec(),
@@ -56,6 +56,7 @@ public class CreateAccountTest {
                 .header("Authorization");
 
         Selenide.open("/");
+        //save the token in localstorage
         executeJavaScript("localStorage.setItem('authToken', arguments[0])", userAuthHeader);
 
         Selenide.open("/dashboard");

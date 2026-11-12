@@ -17,6 +17,10 @@ public class TestDataGenerator {
         return random.nextInt(1_000_000, 2_000_000);
     }
 
+    public static String generateNonExistingAccountNumber() {
+        return "ACC" + random.nextInt(1_000_000, 2_000_000);
+    }
+
     public static String generateProfileName() {
         String[] firstNames = {"Anna", "Maria", "Sofia", "Elena", "Julia", "Lea", "Heike", "Jacqueline", "Barbara"};
         String[] lastNames = {"Schmidt", "Weber", "Muller", "Fischer", "Wagner", "Staub", "Weiss", "True", "Lindner"};
@@ -42,13 +46,19 @@ public class TestDataGenerator {
     }
 
     public static double generateDepositForTransfer() {
-        return random.nextInt(3_334_00, 500_001) / 100.0;
+        return random.nextInt(3_334_00, 5_000_01) / 100.0;
+    }
+
+    public static double generateTransferAmount(double depositAmount) {
+        int maxCents = (int) Math.round(depositAmount * 100);
+        return random.nextInt(1, maxCents + 1) / 100.0;
     }
 
     public static double generateNegativeTransferAmount(double depositAmount) {
         int maxCents = (int) Math.round(depositAmount * 100);
         return -random.nextInt(1, maxCents + 1) / 100.0;
     }
+
 
     public static double generateTransferAmountAboveBalance(double depositAmount) {
         int minCents = (int) Math.round(depositAmount * 100) + 1;

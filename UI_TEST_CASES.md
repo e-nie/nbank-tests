@@ -149,9 +149,9 @@
 **Preconditions:**
 - A user is created via API.
 - The user is logged in.
-- The current profile name is retrieved via API (GET request).
-
-**Steps:**
+- The current profile name is retrieved via API (GET request).//erwartete Wert: null
+ 
+  **Steps:**
 1. Click the user profile in the top-right corner.
 2. Enter a new valid name consisting of two words with letters only.
 3. Click "Save Changes".
