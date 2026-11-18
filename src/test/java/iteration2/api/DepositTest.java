@@ -1,19 +1,19 @@
 package iteration2.api;
 
-import enums.AlertMessage;
-import generators.RandomModelGenerator;
-import generators.TestDataGenerator;
+import api.enums.AlertMessage;
+import api.generators.RandomModelGenerator;
+import api.generators.TestDataGenerator;
 import iteration1.api.BaseTest;
-import models.CreateAccountResponse;
-import models.CreateUserRequest;
-import models.DepositRequest;
-import models.comparison.ModelAssertions;
+import api.models.CreateAccountResponse;
+import api.models.CreateUserRequest;
+import api.models.DepositRequest;
+import api.models.comparison.ModelAssertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import requests.steps.AdminSteps;
-import requests.steps.UserSteps;
-import specs.ResponseSpecs;
+import api.steps.AdminSteps;
+import api.steps.UserSteps;
+import api.specs.ResponseSpecs;
 
 import java.util.Arrays;
 
