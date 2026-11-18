@@ -1,21 +1,21 @@
 package iteration2.ui;
 
+import api.models.*;
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.Configuration;
 import com.codeborne.selenide.Selectors;
 import com.codeborne.selenide.Selenide;
-import enums.AlertMessage;
-import generators.TestDataGenerator;
-import models.*;
+import api.enums.AlertMessage;
+import api.generators.TestDataGenerator;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import requests.skeleton.Endpoint;
-import requests.skeleton.requesters.CrudRequester;
-import requests.steps.AdminSteps;
-import requests.steps.UserSteps;
-import specs.RequestSpecs;
-import specs.ResponseSpecs;
+import api.skeleton.Endpoint;
+import api.skeleton.requesters.CrudRequester;
+import api.steps.AdminSteps;
+import api.steps.UserSteps;
+import api.specs.RequestSpecs;
+import api.specs.ResponseSpecs;
 
 import java.util.Arrays;
 import java.util.Locale;

@@ -2,24 +2,24 @@ package iteration2.ui;
 
 import com.codeborne.selenide.Configuration;
 import com.codeborne.selenide.Selenide;
-import enums.AlertMessage;
-import generators.TestDataGenerator;
-import models.ChangeProfileRequest;
-import models.CreateUserRequest;
-import models.GetProfileResponse;
-import models.LoginUserRequest;
+import api.enums.AlertMessage;
+import api.generators.TestDataGenerator;
+import api.models.ChangeProfileRequest;
+import api.models.CreateUserRequest;
+import api.models.GetProfileResponse;
+import api.models.LoginUserRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import requests.skeleton.Endpoint;
-import requests.skeleton.requesters.CrudRequester;
-import requests.steps.AdminSteps;
-import requests.steps.UserSteps;
-import specs.RequestSpecs;
-import specs.ResponseSpecs;
+import api.skeleton.Endpoint;
+import api.skeleton.requesters.CrudRequester;
+import api.steps.AdminSteps;
+import api.steps.UserSteps;
+import api.specs.RequestSpecs;
+import api.specs.ResponseSpecs;
 
 import java.util.Map;
 

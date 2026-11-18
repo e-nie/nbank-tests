@@ -1,16 +1,16 @@
 package iteration2.api;
 
-import enums.AlertMessage;
-import generators.RandomModelGenerator;
-import generators.TestDataGenerator;
-import models.ChangeProfileRequest;
-import models.CreateUserRequest;
-import models.GetProfileResponse;
-import models.comparison.ModelAssertions;
+import api.enums.AlertMessage;
+import api.generators.RandomModelGenerator;
+import api.generators.TestDataGenerator;
+import api.models.ChangeProfileRequest;
+import api.models.CreateUserRequest;
+import api.models.GetProfileResponse;
+import api.models.comparison.ModelAssertions;
 import org.junit.jupiter.api.Test;
-import requests.steps.AdminSteps;
-import requests.steps.UserSteps;
-import specs.ResponseSpecs;
+import api.steps.AdminSteps;
+import api.steps.UserSteps;
+import api.specs.ResponseSpecs;
 
 import static org.junit.jupiter.api.Assertions.assertNull;
 

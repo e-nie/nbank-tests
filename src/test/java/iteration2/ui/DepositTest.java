@@ -1,21 +1,21 @@
 package iteration2.ui;
 
 import com.codeborne.selenide.*;
-import models.CreateAccountResponse;
-import models.CreateUserRequest;
-import models.LoginUserRequest;
+import api.models.CreateAccountResponse;
+import api.models.CreateUserRequest;
+import api.models.LoginUserRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import requests.skeleton.Endpoint;
-import requests.skeleton.requesters.CrudRequester;
-import requests.steps.AdminSteps;
-import requests.steps.UserSteps;
-import specs.RequestSpecs;
-import specs.ResponseSpecs;
+import api.skeleton.Endpoint;
+import api.skeleton.requesters.CrudRequester;
+import api.steps.AdminSteps;
+import api.steps.UserSteps;
+import api.specs.RequestSpecs;
+import api.specs.ResponseSpecs;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static com.codeborne.selenide.proxy.RequestMatcher.HttpMethod.POST;
 import static com.codeborne.selenide.proxy.RequestMatchers.urlEndsWith;
 
-import enums.AlertMessage;
+import api.enums.AlertMessage;
 
 public class DepositTest {
     @BeforeAll
