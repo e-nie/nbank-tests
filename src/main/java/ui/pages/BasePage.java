@@ -27,7 +27,7 @@ public abstract class BasePage<T extends BasePage<T>> {
 
     public T checkAlertMessageAndAccept(String bankAlert) {
         Alert alert = switchTo().alert();
-        assertThat(alert.getText()).contains(bankAlert);
+        assertThat(alert.getText()).isEqualTo(bankAlert);
         alert.accept();
         return (T) this;
     }

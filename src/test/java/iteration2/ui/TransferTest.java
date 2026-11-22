@@ -7,6 +7,7 @@ import com.codeborne.selenide.Selectors;
 import com.codeborne.selenide.Selenide;
 import api.enums.AlertMessage;
 import api.generators.TestDataGenerator;
+import iteration1.ui.BaseUiTest;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -27,22 +28,7 @@ import static com.codeborne.selenide.Selenide.switchTo;
 import static com.codeborne.selenide.WebDriverConditions.urlContaining;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class TransferTest {
-    @BeforeAll
-    public static void setupSelenoid() {
-        Configuration.remote = "http://localhost:4444/wd/hub";
-        Configuration.baseUrl = "http://192.168.178.20:3000";
-        Configuration.browser = "chrome";
-        Configuration.browserSize = "1920x1080";
-
-        Configuration.browserCapabilities.setCapability("selenoid:options",
-                Map.of("enableVNC", true, "enableLog", true));
-    }
-
-    @AfterEach
-    void tearDown() {
-        closeWebDriver();
-    }
+public class TransferTest extends BaseUiTest {
 
     @DisplayName("TC-12: Successful transfer between accounts")
     @ParameterizedTest

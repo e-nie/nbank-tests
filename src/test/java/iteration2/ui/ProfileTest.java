@@ -8,6 +8,7 @@ import api.models.ChangeProfileRequest;
 import api.models.CreateUserRequest;
 import api.models.GetProfileResponse;
 import api.models.LoginUserRequest;
+import iteration1.ui.BaseUiTest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -30,22 +31,7 @@ import static com.codeborne.selenide.WebDriverConditions.urlContaining;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-public class ProfileTest {
-    @BeforeAll
-    public static void setupSelenoid() {
-        Configuration.remote = "http://localhost:4444/wd/hub";
-        Configuration.baseUrl = "http://192.168.178.20:3000";
-        Configuration.browser = "chrome";
-        Configuration.browserSize = "1920x1080";
-
-        Configuration.browserCapabilities.setCapability("selenoid:options",
-                Map.of("enableVNC", true, "enableLog", true));
-    }
-
-    @AfterEach
-    void tearDown() {
-        closeWebDriver();
-    }
+public class ProfileTest extends BaseUiTest {
 
     @DisplayName("TC-07: Successful profile name update")
     @Test

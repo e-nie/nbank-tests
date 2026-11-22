@@ -6,10 +6,12 @@ import api.specs.RequestSpecs;
 import com.codeborne.selenide.Configuration;
 import com.codeborne.selenide.Selenide;
 import iteration1.api.BaseTest;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 
 import java.util.Map;
 
+import static com.codeborne.selenide.Selenide.closeWebDriver;
 import static com.codeborne.selenide.Selenide.executeJavaScript;
 
 public class BaseUiTest extends BaseTest {
@@ -19,17 +21,23 @@ public class BaseUiTest extends BaseTest {
         Configuration.baseUrl = Config.getProperty("uiBaseUrl");
         Configuration.browser = Config.getProperty("browser");
         Configuration.browserSize = Config.getProperty("browserSize");
+        Configuration.proxyEnabled = true;
 
         Configuration.browserCapabilities.setCapability("selenoid:options",
                 Map.of("enableVNC", true, "enableLog", true));
     }
+
+    @AfterEach
+    void tearDown() {
+        closeWebDriver();
+    }
+
 
     public void authAsUser(String username, String password){
         Selenide.open("/");
         String userAuthHeader = RequestSpecs.getUserAuthHeader(username, password);
         //save the token in localstorage
         executeJavaScript("localStorage.setItem('authToken', arguments[0])", userAuthHeader);
-
     }
 
     public void authAsUser(CreateUserRequest createUserRequest){
