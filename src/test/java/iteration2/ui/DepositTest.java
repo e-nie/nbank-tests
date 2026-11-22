@@ -4,26 +4,28 @@ import api.enums.AlertMessage;
 import api.generators.TestDataGenerator;
 import api.models.CreateAccountResponse;
 import api.models.CreateUserRequest;
+import api.skeleton.Endpoint;
 import api.steps.AdminSteps;
 import api.steps.UserSteps;
-import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.WebDriverRunner;
 import iteration1.ui.BaseUiTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import ui.pages.UserDashboard;
+import ui.pages.UserDashboardPage;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.codeborne.selenide.Selenide.$;
+
 import static com.codeborne.selenide.WebDriverRunner.getSelenideProxy;
 import static com.codeborne.selenide.proxy.RequestMatcher.HttpMethod.POST;
 import static com.codeborne.selenide.proxy.RequestMatchers.urlEndsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class DepositTest extends BaseUiTest {
+    private static final int INTERNAL_SERVER_ERROR = 500;
+    private static final String INTERNAL_SERVER_ERROR_RESPONSE = "{\"error\":\"Internal Server Error\"}";
 
     @DisplayName("TC-01: Successful deposit with valid amounts")
     @ParameterizedTest
@@ -38,7 +40,7 @@ public class DepositTest extends BaseUiTest {
 
         authAsUser(user);
 
-        new UserDashboard()
+        new UserDashboardPage()
                 .open()
                 .makeDeposit(amount)
                 .checkAlertMessageAndAccept(String.format(AlertMessage.SUCCESSFUL_DEPOSIT.getMessage(), amount, account.getAccountNumber()));
@@ -65,7 +67,7 @@ public class DepositTest extends BaseUiTest {
 
         authAsUser(userRequest);
 
-        new UserDashboard()
+        new UserDashboardPage()
                 .open()
                 .makeDeposit(amount)
                 .checkAlertMessageAndAccept(AlertMessage.DEPOSIT_AMOUNT_TOO_HIGH_UI.getMessage());
@@ -92,7 +94,7 @@ public class DepositTest extends BaseUiTest {
 
         authAsUser(userRequest);
 
-        new UserDashboard()
+        new UserDashboardPage()
                 .open()
                 .makeDeposit(amount)
                 .checkAlertMessageAndAccept(AlertMessage.INVALID_DEPOSIT_AMOUNT.getMessage());
@@ -119,7 +121,7 @@ public class DepositTest extends BaseUiTest {
 
         double amount = TestDataGenerator.generateDepositAmount();
 
-        new UserDashboard()
+        new UserDashboardPage()
                 .open()
                 .makeDepositWithoutSelectingAccount(amount)
                 .checkAlertMessageAndAccept(AlertMessage.ACCOUNT_NOT_SELECTED.getMessage());
@@ -143,7 +145,7 @@ public class DepositTest extends BaseUiTest {
 
         authAsUser(userRequestA);
 
-        new UserDashboard()
+        new UserDashboardPage()
                 .open()
                 .openDepositForm()
                 .shouldSeeAccount(accountA.getAccountNumber())
@@ -165,7 +167,7 @@ public class DepositTest extends BaseUiTest {
 
         double amount = TestDataGenerator.generateDepositAmount();
 
-        UserDashboard dashboard = new UserDashboard().open().fillDepositForm(amount);
+        UserDashboardPage dashboard = new UserDashboardPage().open().fillDepositForm(amount);
 
         //сохраняем URL до депозита
         String urlBeforeDeposit = WebDriverRunner.url();
@@ -175,11 +177,11 @@ public class DepositTest extends BaseUiTest {
         // Mock server error
         getSelenideProxy().responseMocker().mockText(
                 "deposit-error",
-                urlEndsWith(POST, "/accounts/deposit"),
-                500,
+                urlEndsWith(POST, Endpoint.DEPOSIT.getUrl()),
+                INTERNAL_SERVER_ERROR,
                 () -> {
                     mockedRequests.incrementAndGet();
-                    return "{\"error\":\"Internal Server Error\"}";
+                    return INTERNAL_SERVER_ERROR_RESPONSE;
                 }
         );
         //Submit deposit and verify error message

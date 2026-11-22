@@ -11,7 +11,7 @@ import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 
 @Getter
-public class UserDashboard extends BasePage<UserDashboard> {
+public class UserDashboardPage extends BasePage<UserDashboardPage> {
     private SelenideElement welcomeText = $(Selectors.byClassName("welcome-text"));
     private SelenideElement createNewAccount = $(Selectors.byText("➕ Create New Account"));
 
@@ -28,18 +28,18 @@ public class UserDashboard extends BasePage<UserDashboard> {
         return "/dashboard";
     }
 
-    public UserDashboard createNewAccount() {
+    public UserDashboardPage createNewAccount() {
         createNewAccount.click();
         return this;
     }
 
 
-    public UserDashboard makeDeposit(double amount) {
+    public UserDashboardPage makeDeposit(double amount) {
         return makeDeposit(String.valueOf(amount));
     }
 
     //для TC-03, где тестируем на пустую строку
-    public UserDashboard makeDeposit(String amount) {
+    public UserDashboardPage makeDeposit(String amount) {
         depositMoneyButton.click();
         accountSelect.click();
         accountSelect.selectOption(1);
@@ -48,31 +48,31 @@ public class UserDashboard extends BasePage<UserDashboard> {
         return this;
     }
 
-    public UserDashboard makeDepositWithoutSelectingAccount(double amount) {
+    public UserDashboardPage makeDepositWithoutSelectingAccount(double amount) {
         depositMoneyButton.click();
         amountInput.setValue(String.valueOf(amount));
         depositButton.click();
         return this;
     }
 
-    public UserDashboard openDepositForm() {
+    public UserDashboardPage openDepositForm() {
         depositMoneyButton.click();
         accountSelect.click();
         return this;
     }
 
-    public UserDashboard shouldSeeAccount(String accountNumber) {
+    public UserDashboardPage shouldSeeAccount(String accountNumber) {
         accountOptions.findBy(text(accountNumber)).should(exist);
         return this;
     }
 
-    public UserDashboard shouldNotSeeAccount(String accountNumber) {
+    public UserDashboardPage shouldNotSeeAccount(String accountNumber) {
         accountOptions.findBy(text(accountNumber)).shouldNot(exist);
         return this;
     }
 
 
-    public UserDashboard fillDepositForm(double amount) {
+    public UserDashboardPage fillDepositForm(double amount) {
         depositMoneyButton.click();
         accountSelect.click();
         accountSelect.selectOption(1);
@@ -80,12 +80,12 @@ public class UserDashboard extends BasePage<UserDashboard> {
         return this;
     }
 
-    public UserDashboard submitDeposit() {
+    public UserDashboardPage submitDeposit() {
         depositButton.click();
         return this;
     }
 
-    public UserDashboard shouldShowDepositForm() {
+    public UserDashboardPage shouldShowDepositForm() {
         depositPageTitle.shouldBe(visible);
         return this;
     }
