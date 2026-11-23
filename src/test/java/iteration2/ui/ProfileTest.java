@@ -142,7 +142,7 @@ public class ProfileTest extends BaseUiTest {
         assertEquals(profileName, userProfileAfterUpdate.getName());
     }
 
-    @DisplayName("TC-12: Profile name contains invalid characters")
+    @DisplayName("TC-11: Profile name contains invalid characters")
     @ParameterizedTest
     @ValueSource(strings = {"Anna123 Schmidt", "Anna@ Schmidt", "$nn% Schm_dt"})
     public void userCannotUpdateProfileNameWithInvalidCharactersViaUiTest(String invalidName) {

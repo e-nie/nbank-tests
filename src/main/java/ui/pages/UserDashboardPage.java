@@ -22,6 +22,9 @@ public class UserDashboardPage extends BasePage<UserDashboardPage> {
     private final SelenideElement amountInput = $("[placeholder='Enter amount']");
     private final SelenideElement depositButton = $$("button").findBy(exactText("\uD83D\uDCB5 Deposit"));
 
+    private final SelenideElement makeTransferButton = $$("button").findBy(exactText("🔄 Make a Transfer"));
+
+
 
     @Override
     public String url() {
@@ -89,5 +92,11 @@ public class UserDashboardPage extends BasePage<UserDashboardPage> {
         depositPageTitle.shouldBe(visible);
         return this;
     }
+
+    public TransferPage openTransfer() {
+        makeTransferButton.click();
+        return new TransferPage();
+    }
+
 }
 
