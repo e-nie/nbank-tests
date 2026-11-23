@@ -7,7 +7,7 @@ import api.steps.UserSteps;
 import com.codeborne.selenide.Selenide;
 import org.junit.jupiter.api.Test;
 import ui.pages.BankAlerts;
-import ui.pages.UserDashboard;
+import ui.pages.UserDashboardPage;
 
 import java.util.List;
 
@@ -22,13 +22,13 @@ public class CreateAccountTest extends BaseUiTest {
 
         Selenide.open("/dashboard");
 
-        new UserDashboard().open().createNewAccount();
+        new UserDashboardPage().open().createNewAccount();
 
         List<CreateAccountResponse> createdAccounts = new UserSteps(user.getUsername(), user.getPassword())
                 .getAllAccounts();
 
         assertThat(createdAccounts).hasSize(1);
-        new UserDashboard().checkAlertMessageAndAccept(BankAlerts.NEW_ACCOUNT_CREATED.getMessage() + createdAccounts.getFirst().getAccountNumber());
+        new UserDashboardPage().checkAlertMessageAndAccept(BankAlerts.NEW_ACCOUNT_CREATED.getMessage() + createdAccounts.getFirst().getAccountNumber());
 
         assertThat(createdAccounts.getFirst().getBalance()).isZero();
     }

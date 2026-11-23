@@ -1,48 +1,25 @@
 package iteration2.ui;
 
-import api.models.*;
-import com.codeborne.selenide.Condition;
-import com.codeborne.selenide.Configuration;
-import com.codeborne.selenide.Selectors;
-import com.codeborne.selenide.Selenide;
 import api.enums.AlertMessage;
 import api.generators.TestDataGenerator;
-import org.junit.jupiter.api.*;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
-import api.skeleton.Endpoint;
-import api.skeleton.requesters.CrudRequester;
+import api.models.*;
+import api.specs.ResponseSpecs;
 import api.steps.AdminSteps;
 import api.steps.UserSteps;
-import api.specs.RequestSpecs;
-import api.specs.ResponseSpecs;
+import iteration1.ui.BaseUiTest;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import ui.pages.TransferPage;
+import ui.pages.UserDashboardPage;
 
 import java.util.Arrays;
-import java.util.Locale;
-import java.util.Map;
 
-import static com.codeborne.selenide.Condition.exactText;
-import static com.codeborne.selenide.Selenide.*;
-import static com.codeborne.selenide.Selenide.switchTo;
-import static com.codeborne.selenide.WebDriverConditions.urlContaining;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class TransferTest {
-    @BeforeAll
-    public static void setupSelenoid() {
-        Configuration.remote = "http://localhost:4444/wd/hub";
-        Configuration.baseUrl = "http://192.168.178.20:3000";
-        Configuration.browser = "chrome";
-        Configuration.browserSize = "1920x1080";
-
-        Configuration.browserCapabilities.setCapability("selenoid:options",
-                Map.of("enableVNC", true, "enableLog", true));
-    }
-
-    @AfterEach
-    void tearDown() {
-        closeWebDriver();
-    }
+public class TransferTest extends BaseUiTest {
 
     @DisplayName("TC-12: Successful transfer between accounts")
     @ParameterizedTest
@@ -84,42 +61,17 @@ public class TransferTest {
         // Get account balances before transfer
         CreateAccountResponse[] accountsBeforeTransfer = UserSteps.getAccounts(user);
 
-        //get user token and save in local Storage
-        String userAuthHeader = new CrudRequester(
-                RequestSpecs.unauthSpec(),
-                Endpoint.LOGIN,
-                ResponseSpecs.requestReturnsOK())
-                .post(LoginUserRequest.builder()
-                        .username(user.getUsername())
-                        .password(user.getPassword())
-                        .build())
-                .extract()
-                .header("Authorization");
+        authAsUser(user);
 
-        Selenide.open("/");
+        TransferPage transferPage = new UserDashboardPage()
+                .open()
+                .openTransfer();
 
-        //save the token in localstorage
-        executeJavaScript("localStorage.setItem('authToken', arguments[0])", userAuthHeader);//saved in local storage
-        Selenide.open("/dashboard");
-
-        // UI. Open transfer form
-        $$("button").findBy(exactText("\uD83D\uDD04 Make a Transfer")).click();
-        webdriver().shouldHave(urlContaining("/transfer"));
-        $(Selectors.byText("\uD83D\uDD04 Make a Transfer")).shouldBe(Condition.visible);
-
-        //fill in the transfer form
-        $("select.account-selector").selectOptionContainingText(senderAccount.getAccountNumber());
-        $("input[placeholder='Enter recipient name']").setValue(profileName);
-        $("input[placeholder='Enter recipient account number']").setValue(recipientAccount.getAccountNumber());
-        $("input[placeholder='Enter amount']").setValue(String.valueOf(amount));
-        $("#confirmCheck").setSelected(true);
-        $$("button").findBy(exactText("\uD83D\uDE80 Send Transfer")).click();
-
-        String alertText = switchTo().alert().getText();
-
-        assertEquals(String.format(AlertMessage.TRANSFER_SUCCESSFUL_UI.getMessage(), amount, recipientAccount.getAccountNumber()), alertText);
-
-        switchTo().alert().accept();
+        transferPage.selectSenderAccount(senderAccount.getAccountNumber())
+                .fillTransferForm(profileName, recipientAccount.getAccountNumber(), amount)
+                .confirmTransfer()
+                .submitTransfer()
+                .checkAlertMessageAndAccept(String.format(AlertMessage.TRANSFER_SUCCESSFUL_UI.getMessage(), amount, recipientAccount.getAccountNumber()));
 
         CreateAccountResponse[] accountsAfterTransfer = UserSteps.getAccounts(user);
 
@@ -192,72 +144,51 @@ public class TransferTest {
                 .filter(account -> account.getAccountNumber().equals(recipientAccount.getAccountNumber()))
                 .findFirst().orElseThrow();
 
-        //get user token and save in local Storage
-        String userAuthHeader = new CrudRequester(
-                RequestSpecs.unauthSpec(),
-                Endpoint.LOGIN,
-                ResponseSpecs.requestReturnsOK())
-                .post(LoginUserRequest.builder()
-                        .username(user.getUsername())
-                        .password(user.getPassword())
-                        .build())
-                .extract()
-                .header("Authorization");
+        authAsUser(user);
 
-        Selenide.open("/");
+        TransferPage transferPage = new UserDashboardPage()
+                .open()
+                .openTransfer()
+                .shouldShowTransferPage();
 
-        //save the token in localstorage
-        executeJavaScript("localStorage.setItem('authToken', arguments[0])", userAuthHeader);//saved in local storage
-        Selenide.open("/dashboard");
 
-        // Open transfer form
-        $$("button").findBy(exactText("🔄 Make a Transfer")).click();
-        webdriver().shouldHave(urlContaining("/transfer"));
-        $(Selectors.byText("🔄 Make a Transfer")).shouldBe(Condition.visible);
-
-        //test steps
         if (!emptyField.equals("senderAccount")) {
-            $("select.account-selector")
-                    .selectOptionContainingText(senderAccount.getAccountNumber());
+            transferPage.selectSenderAccount(senderAccount.getAccountNumber());
         }
 
         if (!emptyField.equals("recipientName")) {
-            $("input[placeholder='Enter recipient name']").setValue(profileName);
+            transferPage.enterRecipientName(profileName);
         }
 
         if (!emptyField.equals("recipientAccountNumber")) {
-            $("input[placeholder='Enter recipient account number']").setValue(recipientAccount.getAccountNumber());
+            transferPage.enterRecipientAccountNumber(recipientAccount.getAccountNumber());
         }
 
         if (!emptyField.equals("amount")) {
-            $("input[placeholder='Enter amount']").setValue(String.valueOf(transferAmount));
+            transferPage.enterAmount(transferAmount);
         }
+        String expectedAlertMessage = emptyField.equals("recipientName")
+                ? AlertMessage.RECIPIENT_NAME_MISMATCH.getMessage()
+                : AlertMessage.REQUIRED_FIELDS_NOT_FILLED.getMessage();
 
-        $("#confirmCheck").setSelected(true);
-        $$("button").findBy(exactText("\uD83D\uDE80 Send Transfer")).click();
 
-        String alertText = switchTo().alert().getText();
+        transferPage.confirmTransfer()
+                .submitTransfer()
+                .checkAlertMessageAndAccept(expectedAlertMessage);
 
-        if (emptyField.equals("recipientName")) {
-            assertEquals(AlertMessage.RECIPIENT_NAME_MISMATCH.getMessage(), alertText);
-        } else {
-            assertEquals(AlertMessage.REQUIRED_FIELDS_NOT_FILLED.getMessage(), alertText);
-        }
 
-        switchTo().alert().accept();
-        //all user's accounts after transfer
+// Get account balances after transfer
         CreateAccountResponse[] accountsAfterTransfer = UserSteps.getAccounts(user);
 
-
-        //sender account after
         CreateAccountResponse senderAfterTransfer = Arrays.stream(accountsAfterTransfer)
                 .filter(account -> account.getAccountNumber().equals(senderAccount.getAccountNumber()))
-                .findFirst().orElseThrow();
+                .findFirst()
+                .orElseThrow();
 
-        //recipient account after
         CreateAccountResponse recipientAfterTransfer = Arrays.stream(accountsAfterTransfer)
                 .filter(account -> account.getAccountNumber().equals(recipientAccount.getAccountNumber()))
-                .findFirst().orElseThrow();
+                .findFirst()
+                .orElseThrow();
 
         assertEquals(senderBeforeTransfer.getBalance(), senderAfterTransfer.getBalance());
         assertEquals(recipientBeforeTransfer.getBalance(), recipientAfterTransfer.getBalance());
@@ -312,41 +243,19 @@ public class TransferTest {
                 .filter(account -> account.getAccountNumber().equals(recipientAccount.getAccountNumber()))
                 .findFirst().orElseThrow();
 
-        //get user token and save in local Storage
-        String userAuthHeader = new CrudRequester(
-                RequestSpecs.unauthSpec(),
-                Endpoint.LOGIN,
-                ResponseSpecs.requestReturnsOK())
-                .post(LoginUserRequest.builder()
-                        .username(user.getUsername())
-                        .password(user.getPassword())
-                        .build())
-                .extract()
-                .header("Authorization");
 
-        Selenide.open("/");
+        authAsUser(user);
 
-        //save the token in localstorage
-        executeJavaScript("localStorage.setItem('authToken', arguments[0])", userAuthHeader);//saved in local storage
-        Selenide.open("/dashboard");
+        TransferPage transferPage = new UserDashboardPage()
+                .open()
+                .openTransfer()
+                .shouldShowTransferPage();
 
-        // Open transfer form
-        $$("button").findBy(exactText("🔄 Make a Transfer")).click();
-        webdriver().shouldHave(urlContaining("/transfer"));
-        $(Selectors.byText("🔄 Make a Transfer")).shouldBe(Condition.visible);
+        transferPage.selectSenderAccount(senderAccount.getAccountNumber())
+                .fillTransferForm(profileName, recipientAccount.getAccountNumber(), transferAmount)
+                .submitTransfer()
+                .checkAlertMessageAndAccept(AlertMessage.REQUIRED_FIELDS_NOT_FILLED.getMessage());
 
-        //test steps
-        //fill in the transfer form
-        $("select.account-selector").selectOptionContainingText(senderAccount.getAccountNumber());
-        $("input[placeholder='Enter recipient name']").setValue(profileName);
-        $("input[placeholder='Enter recipient account number']").setValue(recipientAccount.getAccountNumber());
-        $("input[placeholder='Enter amount']").setValue(String.valueOf(transferAmount));
-        //-omit the checkbox-
-        $$("button").findBy(exactText("\uD83D\uDE80 Send Transfer")).click();
-
-        String alertText = switchTo().alert().getText();
-        assertEquals(AlertMessage.REQUIRED_FIELDS_NOT_FILLED.getMessage(), alertText);
-        switchTo().alert().accept();
 
         //all user's accounts after transfer
         CreateAccountResponse[] accountsAfterTransfer = UserSteps.getAccounts(user);
@@ -409,42 +318,19 @@ public class TransferTest {
                 .filter(account -> account.getAccountNumber().equals(userAccount.getAccountNumber()))
                 .findFirst().orElseThrow();
 
+        authAsUser(user);
 
-        //get user token and save in local Storage
-        String userAuthHeader = new CrudRequester(
-                RequestSpecs.unauthSpec(),
-                Endpoint.LOGIN,
-                ResponseSpecs.requestReturnsOK())
-                .post(LoginUserRequest.builder()
-                        .username(user.getUsername())
-                        .password(user.getPassword())
-                        .build())
-                .extract()
-                .header("Authorization");
+        TransferPage transferPage = new UserDashboardPage()
+                .open()
+                .openTransfer()
+                .shouldShowTransferPage();
 
-        Selenide.open("/");
-
-        //save the token in localstorage
-        executeJavaScript("localStorage.setItem('authToken', arguments[0])", userAuthHeader);//saved in local storage
-        Selenide.open("/dashboard");
-
-        // Open transfer form
-        $$("button").findBy(exactText("🔄 Make a Transfer")).click();
-        webdriver().shouldHave(urlContaining("/transfer"));
-        $(Selectors.byText("🔄 Make a Transfer")).shouldBe(Condition.visible);
-
-        //test steps
-        //fill in the transfer form
-        $("select.account-selector").selectOptionContainingText(userAccount.getAccountNumber());
-        $("select.account-selector").shouldHave(Condition.value(String.valueOf(userAccount.getId())));        $("input[placeholder='Enter recipient name']").setValue(profileName);
-        $("input[placeholder='Enter recipient account number']").setValue(userAccount.getAccountNumber());
-        $("input[placeholder='Enter amount']").setValue(String.valueOf(transferAmount));
-        $("#confirmCheck").setSelected(true);
-        $$("button").findBy(exactText("\uD83D\uDE80 Send Transfer")).click();
-
-        String alertText = switchTo().alert().getText();
-        assertEquals(AlertMessage.INVALID_TRANSFER.getMessage(), alertText);
-        switchTo().alert().accept();
+        transferPage.selectSenderAccount(userAccount.getAccountNumber())
+                .shouldHaveSelectedSenderAccount(userAccount.getId())
+                .fillTransferForm(profileName, userAccount.getAccountNumber(), transferAmount)
+                .confirmTransfer()
+                .submitTransfer()
+                .checkAlertMessageAndAccept(AlertMessage.INVALID_TRANSFER.getMessage());
 
         //user's accounts after transfer
         CreateAccountResponse[] accountsAfterTransfer = UserSteps.getAccounts(user);
@@ -499,42 +385,19 @@ public class TransferTest {
                 .filter(account -> account.getAccountNumber().equals(recipientAccount.getAccountNumber()))
                 .findFirst().orElseThrow();
 
-        //get user token and save in local Storage
-        String userAuthHeader = new CrudRequester(
-                RequestSpecs.unauthSpec(),
-                Endpoint.LOGIN,
-                ResponseSpecs.requestReturnsOK())
-                .post(LoginUserRequest.builder()
-                        .username(user.getUsername())
-                        .password(user.getPassword())
-                        .build())
-                .extract()
-                .header("Authorization");
 
-        Selenide.open("/");
+        authAsUser(user);
 
-        //save the token in localstorage
-        executeJavaScript("localStorage.setItem('authToken', arguments[0])", userAuthHeader);//saved in local storage
-        Selenide.open("/dashboard");
+        TransferPage transferPage = new UserDashboardPage()
+                .open()
+                .openTransfer()
+                .shouldShowTransferPage();
 
-        // Open transfer form
-        $$("button").findBy(exactText("🔄 Make a Transfer")).click();
-        webdriver().shouldHave(urlContaining("/transfer"));
-        $(Selectors.byText("🔄 Make a Transfer")).shouldBe(Condition.visible);
-
-        //test steps
-        //fill in the transfer form
-        $("select.account-selector").selectOptionContainingText(senderAccount.getAccountNumber());
-        $("input[placeholder='Enter recipient name']").setValue(TestDataGenerator.generateProfileName());
-        $("input[placeholder='Enter recipient account number']").setValue(recipientAccount.getAccountNumber());
-        $("input[placeholder='Enter amount']").setValue(String.valueOf(transferAmount));
-        $("#confirmCheck").setSelected(true);
-
-        $$("button").findBy(exactText("\uD83D\uDE80 Send Transfer")).click();
-
-        String alertText = switchTo().alert().getText();
-        assertEquals(AlertMessage.INCORRECT_TRANSFER_NAME.getMessage(), alertText);
-        switchTo().alert().accept();
+        transferPage.selectSenderAccount(senderAccount.getAccountNumber())
+                .fillTransferForm(TestDataGenerator.generateProfileName(), recipientAccount.getAccountNumber(), transferAmount)
+                .confirmTransfer()
+                .submitTransfer()
+                .checkAlertMessageAndAccept(AlertMessage.INCORRECT_TRANSFER_NAME.getMessage());
 
         //all user's accounts after transfer
         CreateAccountResponse[] accountsAfterTransfer = UserSteps.getAccounts(user);
@@ -603,41 +466,18 @@ public class TransferTest {
                 .filter(account -> account.getAccountNumber().equals(recipientAccount.getAccountNumber()))
                 .findFirst().orElseThrow();
 
-        //get user token and save in local Storage
-        String userAuthHeader = new CrudRequester(
-                RequestSpecs.unauthSpec(),
-                Endpoint.LOGIN,
-                ResponseSpecs.requestReturnsOK())
-                .post(LoginUserRequest.builder()
-                        .username(user.getUsername())
-                        .password(user.getPassword())
-                        .build())
-                .extract()
-                .header("Authorization");
+        authAsUser(user);
 
-        Selenide.open("/");
+        TransferPage transferPage = new UserDashboardPage()
+                .open()
+                .openTransfer()
+                .shouldShowTransferPage();
 
-        //save the token in localstorage
-        executeJavaScript("localStorage.setItem('authToken', arguments[0])", userAuthHeader);//saved in local storage
-        Selenide.open("/dashboard");
-
-        // Open transfer form
-        $$("button").findBy(exactText("🔄 Make a Transfer")).click();
-        webdriver().shouldHave(urlContaining("/transfer"));
-        $(Selectors.byText("🔄 Make a Transfer")).shouldBe(Condition.visible);
-
-        //test steps
-        //fill in the transfer form
-        $("select.account-selector").selectOptionContainingText(senderAccount.getAccountNumber());
-        $("input[placeholder='Enter recipient name']").setValue(profileName);
-        $("input[placeholder='Enter recipient account number']").setValue(recipientAccount.getAccountNumber());
-        $("input[placeholder='Enter amount']").setValue(String.valueOf(transferAmount));
-        $("#confirmCheck").setSelected(true);
-        $$("button").findBy(exactText("\uD83D\uDE80 Send Transfer")).click();
-
-        String alertText = switchTo().alert().getText();
-        assertEquals(AlertMessage.TRANSFER_AMOUNT_EXCEEDS_LIMIT_UI.getMessage(), alertText);
-        switchTo().alert().accept();
+        transferPage.selectSenderAccount(senderAccount.getAccountNumber())
+                .fillTransferForm(profileName, recipientAccount.getAccountNumber(), transferAmount)
+                .confirmTransfer()
+                .submitTransfer()
+                .checkAlertMessageAndAccept(AlertMessage.TRANSFER_AMOUNT_EXCEEDS_LIMIT_UI.getMessage());
 
         //all user's accounts after transfer
         CreateAccountResponse[] accountsAfterTransfer = UserSteps.getAccounts(user);
@@ -702,42 +542,18 @@ public class TransferTest {
                 .filter(account -> account.getAccountNumber().equals(recipientAccount.getAccountNumber()))
                 .findFirst().orElseThrow();
 
-        //get user token and save in local Storage
-        String userAuthHeader = new CrudRequester(
-                RequestSpecs.unauthSpec(),
-                Endpoint.LOGIN,
-                ResponseSpecs.requestReturnsOK())
-                .post(LoginUserRequest.builder()
-                        .username(user.getUsername())
-                        .password(user.getPassword())
-                        .build())
-                .extract()
-                .header("Authorization");
+        authAsUser(user);
 
-        Selenide.open("/");
+        TransferPage transferPage = new UserDashboardPage()
+                .open()
+                .openTransfer()
+                .shouldShowTransferPage();
 
-        //save the token in localstorage
-        executeJavaScript("localStorage.setItem('authToken', arguments[0])", userAuthHeader);//saved in local storage
-        Selenide.open("/dashboard");
-
-        // Open transfer form
-        $$("button").findBy(exactText("🔄 Make a Transfer")).click();
-        webdriver().shouldHave(urlContaining("/transfer"));
-        $(Selectors.byText("🔄 Make a Transfer")).shouldBe(Condition.visible);
-
-        //test steps
-        //fill in the transfer form
-        $("select.account-selector").selectOptionContainingText(senderAccount.getAccountNumber());
-        $("input[placeholder='Enter recipient name']").setValue(profileName);
-        $("input[placeholder='Enter recipient account number']").setValue(recipientAccount.getAccountNumber());
-
-        $("input[placeholder='Enter amount']").setValue(String.valueOf(transferAmount));
-        $("#confirmCheck").setSelected(true);
-        $$("button").findBy(exactText("\uD83D\uDE80 Send Transfer")).click();
-
-        String alertText = switchTo().alert().getText();
-        assertEquals(AlertMessage.INVALID_TRANSFER.getMessage(), alertText);
-        switchTo().alert().accept();
+        transferPage.selectSenderAccount(senderAccount.getAccountNumber())
+                .fillTransferForm(profileName, recipientAccount.getAccountNumber(), transferAmount)
+                .confirmTransfer()
+                .submitTransfer()
+                .checkAlertMessageAndAccept(AlertMessage.INVALID_TRANSFER.getMessage());
 
         //all user's accounts after transfer
         CreateAccountResponse[] accountsAfterTransfer = UserSteps.getAccounts(user);
@@ -795,43 +611,20 @@ public class TransferTest {
                 .filter(account -> account.getAccountNumber().equals(senderAccount.getAccountNumber()))
                 .findFirst().orElseThrow();
 
-        //get user token and save in local Storage
-        String userAuthHeader = new CrudRequester(
-                RequestSpecs.unauthSpec(),
-                Endpoint.LOGIN,
-                ResponseSpecs.requestReturnsOK())
-                .post(LoginUserRequest.builder()
-                        .username(user.getUsername())
-                        .password(user.getPassword())
-                        .build())
-                .extract()
-                .header("Authorization");
-
-        Selenide.open("/");
-
-        //save the token in localstorage
-        executeJavaScript("localStorage.setItem('authToken', arguments[0])", userAuthHeader);//saved in local storage
-        Selenide.open("/dashboard");
-
-        // Open transfer form
-        $$("button").findBy(exactText("🔄 Make a Transfer")).click();
-        webdriver().shouldHave(urlContaining("/transfer"));
-        $(Selectors.byText("🔄 Make a Transfer")).shouldBe(Condition.visible);
-
-        //test steps
-        //fill in the transfer form
-        $("select.account-selector").selectOptionContainingText(senderAccount.getAccountNumber());
-        $("input[placeholder='Enter recipient name']").setValue(profileName);
         String nonExistingAccountNumber = TestDataGenerator.generateNonExistingAccountNumber();
-        $("input[placeholder='Enter recipient account number']").setValue(nonExistingAccountNumber);
 
-        $("input[placeholder='Enter amount']").setValue(String.valueOf(transferAmount));
-        $("#confirmCheck").setSelected(true);
-        $$("button").findBy(exactText("\uD83D\uDE80 Send Transfer")).click();
+        authAsUser(user);
 
-        String alertText = switchTo().alert().getText();
-        assertEquals(AlertMessage.RECIPIENT_ACCOUNT_NOT_FOUND.getMessage(), alertText);
-        switchTo().alert().accept();
+        TransferPage transferPage = new UserDashboardPage()
+                .open()
+                .openTransfer()
+                .shouldShowTransferPage();
+
+        transferPage.selectSenderAccount(senderAccount.getAccountNumber())
+                .fillTransferForm(profileName, nonExistingAccountNumber, transferAmount)
+                .confirmTransfer()
+                .submitTransfer()
+                .checkAlertMessageAndAccept(AlertMessage.RECIPIENT_ACCOUNT_NOT_FOUND.getMessage());
 
         //all user's accounts after transfer
         CreateAccountResponse[] accountsAfterTransfer = UserSteps.getAccounts(user);
@@ -844,7 +637,6 @@ public class TransferTest {
     /*Expected :✅ Transfer of $1478.42 successful from Account 5 to 6!
     Actual   :✅ Transfer of $1478.42 successful from Account 5 to 5!
     */
-
     @DisplayName("TC-20: Repeat of successful transfer")
     @Test
     public void userCanRepeatSuccessfulTransferViaUiTest() {
@@ -917,54 +709,24 @@ public class TransferTest {
         assertEquals(senderAfterDeposit.getBalance() - firstTransferAmount, senderAfterFirstTransfer.getBalance());
         assertEquals(recipientAfterDeposit.getBalance() + firstTransferAmount, recipientAfterFirstTransfer.getBalance());
 
-        //get user token and save in local Storage
-        String userAuthHeader = new CrudRequester(
-                RequestSpecs.unauthSpec(),
-                Endpoint.LOGIN,
-                ResponseSpecs.requestReturnsOK())
-                .post(LoginUserRequest.builder()
-                        .username(user.getUsername())
-                        .password(user.getPassword())
-                        .build())
-                .extract()
-                .header("Authorization");
+        authAsUser(user);
 
-        Selenide.open("/");
+        TransferPage transferPage = new UserDashboardPage()
+                .open()
+                .openTransfer()
+                .shouldShowTransferPage();
 
-        //save the token in localstorage
-        executeJavaScript("localStorage.setItem('authToken', arguments[0])", userAuthHeader);//saved in local storage
-        Selenide.open("/dashboard");
 
-        //Test steps
-        $$("button").findBy(exactText("\uD83D\uDD04 Make a Transfer")).click();
-        webdriver().shouldHave(urlContaining("/transfer"));
-        $(Selectors.byText("\uD83D\uDD04 Make a Transfer")).shouldBe(Condition.visible);
-
-        $$("button").findBy(exactText("\uD83D\uDD01 Transfer Again")).click();
-        $("input[placeholder='Enter name to find transactions']").setValue(profileName);
-        $$("button").findBy(exactText("\uD83D\uDD0D Search Transactions")).click();
-
-        String transferText = String.format(Locale.US, "TRANSFER_OUT - $%.2f", firstTransferAmount);
-
-        $("ul.list-group").$$("li")
-                .findBy(Condition.text(transferText))
-                .$$("button").findBy(exactText("🔁 Repeat")).click();
-
-        //open modal
-        $("div.modal-title.h4").shouldBe(Condition.visible).shouldHave(exactText("🔁 Repeat Transfer"));
-        //choose sender's account by id
-        $(".modal.show select.form-control").selectOptionByValue(String.valueOf(senderAccount.getId()));
-        //the last transfer amount is already in the input
-        $(".modal.show input[type='number']").shouldHave(Condition.value(String.valueOf(firstTransferAmount)));
-        $("#confirmCheck").setSelected(true);
-        $(".modal.show").$$("button").findBy(exactText("🚀 Send Transfer")).click();
-
-        String alertText = switchTo().alert().getText();
-
-        assertEquals(String.format(AlertMessage.REPEAT_TRANSFER_SUCCESSFUL_UI.getMessage(), firstTransferAmount,
-                senderAccount.getId(), recipientAccount.getId()), alertText);
-
-        switchTo().alert().accept();
+        transferPage.openTransferAgain()
+                .searchTransactionByName(profileName)
+                .searchTransactions()
+                .repeatTransaction(firstTransferAmount)
+                .shouldShowRepeatTransferModal()
+                .selectModalSenderAccount(senderAccount.getId())
+                .shouldHaveRepeatAmount(firstTransferAmount)
+                .confirmTransfer()
+                .submitRepeatTransfer()
+                .checkAlertMessageAndAccept(String.format(AlertMessage.REPEAT_TRANSFER_SUCCESSFUL_UI.getMessage(), firstTransferAmount, senderAccount.getId(), recipientAccount.getId()));
 
         CreateAccountResponse[] accountsAfterTransfer = UserSteps.getAccounts(user);
 
@@ -1056,53 +818,23 @@ public class TransferTest {
         assertEquals(senderAfterDeposit.getBalance() - firstTransferAmount, senderAfterFirstTransfer.getBalance());
         assertEquals(recipientAfterDeposit.getBalance() + firstTransferAmount, recipientAfterFirstTransfer.getBalance());
 
-        //get user token and save in local storage
-        String userAuthHeader = new CrudRequester(
-                RequestSpecs.unauthSpec(),
-                Endpoint.LOGIN,
-                ResponseSpecs.requestReturnsOK())
-                .post(LoginUserRequest.builder()
-                        .username(user.getUsername())
-                        .password(user.getPassword())
-                        .build())
-                .extract()
-                .header("Authorization");
+        authAsUser(user);
 
-        Selenide.open("/");
-        executeJavaScript("localStorage.setItem('authToken', arguments[0])", userAuthHeader);
-        Selenide.open("/dashboard");
+        TransferPage transferPage = new UserDashboardPage()
+                .open()
+                .openTransfer()
+                .shouldShowTransferPage();
 
-        //test steps
-        $$("button").findBy(exactText("🔄 Make a Transfer")).click();
-        webdriver().shouldHave(urlContaining("/transfer"));
-        $(Selectors.byText("🔄 Make a Transfer")).shouldBe(Condition.visible);
-
-        $$("button").findBy(exactText("🔁 Transfer Again")).click();
-        $("input[placeholder='Enter name to find transactions']").setValue(profileName);
-        $$("button").findBy(exactText("🔍 Search Transactions")).click();
-
-        String transferText = String.format(Locale.US, "TRANSFER_OUT - $%.2f", firstTransferAmount);
-
-        $("ul.list-group").$$("li")
-                .findBy(Condition.text(transferText))
-                .$$("button").findBy(exactText("🔁 Repeat")).click();
-
-        //open modal
-        $("div.modal-title.h4").shouldBe(Condition.visible).shouldHave(exactText("🔁 Repeat Transfer"));
-
-        //choose sender's account
-        $(".modal.show select.form-control").selectOptionByValue(String.valueOf(senderAccount.getId()));
-
-        //replace the original transfer amount with an invalid amount
-        $(".modal.show input[type='number']").setValue(String.valueOf(invalidAmount));
-
-        $("#confirmCheck").setSelected(true);
-        $(".modal.show").$$("button").findBy(exactText("🚀 Send Transfer")).click();
-
-        //verify error message
-        String alertText = switchTo().alert().getText();
-        assertEquals(AlertMessage.TRANSFER_FAILED_UI.getMessage(), alertText);
-        switchTo().alert().accept();
+        transferPage.openTransferAgain()
+                .searchTransactionByName(profileName)
+                .searchTransactions()
+                .repeatTransaction(firstTransferAmount)
+                .shouldShowRepeatTransferModal()
+                .selectModalSenderAccount(senderAccount.getId())
+                .enterRepeatTransferAmount(invalidAmount)
+                .confirmTransfer()
+                .submitRepeatTransfer()
+                .checkAlertMessageAndAccept(AlertMessage.TRANSFER_FAILED_UI.getMessage());
 
         //verify account balances have not changed
         CreateAccountResponse[] accountsAfterFailedTransfer = UserSteps.getAccounts(user);
